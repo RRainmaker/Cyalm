@@ -28,8 +28,16 @@ Step 1:
  Step 3:
 
 
-  Run python3.8 bot.py
+  Run python3 -m pip install -U -r requirements.txt
+ 
+ 
+ 
+Step 4:
+
+
+. Run python3 bot.py in a new console
+
+
   
-
-
+  
   And thats it!
