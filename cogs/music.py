@@ -197,7 +197,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
-            if not ctx.guild;
+            if not ctx.guild:
                 # the only other error to raise check failure is no private messages
                 return await ctx.send(f'The `{ctx.command.name}` command can only be used in a server and not a DM')
             else:
