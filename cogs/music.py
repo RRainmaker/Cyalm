@@ -53,7 +53,7 @@ class Player(wavelink.Player):
     async def start_controller(self):
         self.updating = True
 
-        embed = discord.Embed(title=f'<a:soundwaves:737809783867965521> Music Player @ {self.bot.get_channel(self.channel_id)}', color=self.ctx.pcolors, description=f'Now Playing:\n[**`{self.current.title}`**]({self.current.uri})')
+        embed = discord.Embed(title=f'<a:soundwaves:737809783867965521> Music Player @ {self.bot.get_channel(self.channel_id).name}', color=self.ctx.pcolors, description=f'Now Playing:\n[**`{self.current.title}`**]({self.current.uri})')
         
         if self.current.thumb: 
             embed.set_thumbnail(url=self.current.thumb)
