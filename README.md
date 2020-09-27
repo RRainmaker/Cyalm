@@ -12,10 +12,9 @@ To clone the repo and run the bot yourself, heres what you need:
   PostgreSQL
   
 Step 1:
+  
   Download Lavalink.jar from [here](https://github.com/Frederikam/Lavalink/releases)
-  
   Make a file called [application.yml](https://github.com/Frederikam/Lavalink/blob/master/LavalinkServer/application.yml.example) and put it in the same directory as Lavalink.jar
-  
   Go into console and type java -jar Lavalink.jar
  
  Step 2:
