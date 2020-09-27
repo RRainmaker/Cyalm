@@ -4,6 +4,7 @@ Welcome to the PersonaBot! The name is self-explanatory, it is a Discord bot mad
 Invite: https://discord.com/oauth2/authorize?client_id=723716012121391144&permissions=3229760&scope=bot
 
 To clone the repo and run the bot yourself, heres what you need:
+  
   Java 11 or higher
   Python 3 or higher
   PostgreSQL
