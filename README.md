@@ -35,7 +35,7 @@ Step 1:
 Step 4:
 
 
-. Run python3 bot.py in a new console
+  Run python3 bot.py in a new console
 
 
   
