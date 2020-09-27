@@ -1,0 +1,8 @@
+discord.py[voice]
+asyncpg
+wavelink
+humanize
+wikia
+git+https://github.com/Rapptz/discord-ext-menus
+jishaku
+parsedatetime
