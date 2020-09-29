@@ -248,6 +248,27 @@ class Utility(commands.Cog):
         bot.help_command = HelpCommand()
         bot.help_command.cog = self
 
+    @commands.command(description="Check the bot's ping")
+    async def ping(self, ctx):
+        await ctx.send(f'{(self.bot.latency * 1000):.2f} milliseconds')
+
+    @commands.command(description='Invite the bot to your server')
+    async def invite(self, ctx):
+        await ctx.send(f'<https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&permissions=3229760&scope=bot>')
+    
+    @commands.group(invoke_without_command=True, description='Show the prefix the bot uses on the current server', aliases=['prefixes'])
+    async def prefix(self, ctx):
+        prefixes = await self.bot.get_prefix(ctx.message)
+        await ctx.send(embed=discord.Embed(title='Current Prefixes', description='**' + '\n'.join(prefixes[1:]) + '**', color=ctx.pcolors))
+
+    @commands.command(description='How long the bot has been up for')
+    async def uptime(self, ctx):
+        await ctx.send(humanize.precisedelta(datetime.datetime.now() - self.bot.start_time, format='%0.0f'))
+    
+    @commands.command(description='The source code for the bot')
+    async def source(self, ctx):
+        await ctx.send('https://github.com/DiscordRain/PersonaBot')
+
     @commands.command(aliases=['lc', 'lines'], description='The amount of lines and files that make up the bot')
     async def linecount(self, ctx):
         lines = filecount = 0
@@ -265,19 +286,6 @@ class Utility(commands.Cog):
                     lines += len([line for line in open(f'{path}/{name}') if not line.strip().startswith(('#', "'", '"')) and len(line.strip()) > 0])
         
         await ctx.send(f'{lines} lines across {filecount} files')
-
-    @commands.command(description="Check the bot's ping")
-    async def ping(self, ctx):
-        await ctx.send(f'{(self.bot.latency * 1000):.2f} milliseconds')
-
-    @commands.command(description='Invite the bot to your server')
-    async def invite(self, ctx):
-        await ctx.send(f'<https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&permissions=3229760&scope=bot>')
-    
-    @commands.group(invoke_without_command=True, description='Show the prefix the bot uses on the current server', aliases=['prefixes'])
-    async def prefix(self, ctx):
-        prefixes = await self.bot.get_prefix(ctx.message)
-        await ctx.send(embed=discord.Embed(title='Current Prefixes', description='**' + '\n'.join(prefixes[1:]) + '**', color=ctx.pcolors))
 
     @prefix.command(description='Change the prefix of the bot for the server')
     @commands.has_guild_permissions(manage_guild=True)
@@ -342,10 +350,6 @@ class Utility(commands.Cog):
         await ctx.execute(f"UPDATE prefix SET prefixes = ARRAY{new_prefixes}::text[] WHERE guild_id = {ctx.guild.id}")
         
         await ctx.send('Removed these prefixes: \n' + '\n'.join(new_prefixes))
-
-    @commands.command(description='How long the bot has been up for')
-    async def uptime(self, ctx):
-        await ctx.send(humanize.precisedelta(datetime.datetime.now() - self.bot.start_time, format='%0.0f'))
 
 def setup(bot): 
     bot.add_cog(Utility(bot))
