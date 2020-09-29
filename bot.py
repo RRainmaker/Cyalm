@@ -16,28 +16,30 @@ class Persona(commands.Bot):
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=Context)
         
-        if await self.is_owner(ctx.author):
-            return await self.invoke(ctx)
+        if message.content.startswith(tuple(await self.get_prefix(message))):
 
-        blacklist = []
-        for member in await ctx.fetch('SELECT * FROM blacklist;'):
-            blacklist.append(member['id'])
+            if await self.is_owner(ctx.author):
+                return await self.invoke(ctx)
 
-        if ctx.author.id in blacklist or ctx.author.bot:
-            return
+            blacklist = []
+            for member in await ctx.fetch('SELECT * FROM blacklist;'):
+                blacklist.append(member['id'])
         
-        if self.cooldown.get_bucket(message).update_rate_limit(message.created_at.timestamp()):
-            authorid = ctx.author.id
-            if authorid not in self.spam_strikes.keys():
-                self.spam_strikes[authorid] = 1
-            else:
-                self.spam_strikes[authorid] += 1
-                if self.spam_strikes[authorid] >= 5:
-                    del self.spam_strikes[authorid]
-                    await ctx.execute(f"INSERT INTO blacklist (name, id, reason) VALUES('{ctx.author}', {authorid}, 'Excessive command spamming');")
-                    return await ctx.send(f'{ctx.author.mention}, you are now blacklisted for excessive spamming')
-                
-        await self.invoke(ctx)
+            if ctx.author.id in blacklist or ctx.author.bot:
+                return
+        
+            if self.cooldown.get_bucket(message).update_rate_limit(message.created_at.timestamp()):
+                authorid = ctx.author.id
+                if authorid not in self.spam_strikes.keys():
+                    self.spam_strikes[authorid] = 1
+                else:
+                    self.spam_strikes[authorid] += 1
+                    if self.spam_strikes[authorid] >= 5:
+                        del self.spam_strikes[authorid]
+                        await ctx.execute(f"INSERT INTO blacklist (name, id, reason) VALUES('{ctx.author}', {authorid}, 'Excessive command spamming');")
+                        return await ctx.send(f'{ctx.author.mention}, you are now blacklisted for excessive spamming')
+
+            await self.invoke(ctx)
     
     async def on_ready(self):
         self.start_time = datetime.datetime.now()
