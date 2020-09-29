@@ -275,7 +275,7 @@ class Utility(commands.Cog):
     
     @commands.command(description='The source code for the bot')
     async def source(self, ctx):
-        await ctx.send('https://github.com/DiscordRain/PersonaBot')
+        await ctx.send('https://github.com/RoyalRainmaker/PersonaBot')
 
     @commands.command(aliases=['lc', 'lines'], description='The amount of lines and files that make up the bot')
     async def linecount(self, ctx):
