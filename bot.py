@@ -88,7 +88,7 @@ class Persona(commands.Bot):
         for guild in await Context.fetch('SELECT * FROM mod'):
             if guild['mute_role'] == role.id and role.guild.system_channel:
                 await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE id = {role.guild.id}')                
-                return await role.guild.system_channel.send('The custom mute role has been deleted, please update this')
+                return await role.guild.system_channel.send('The custom mute role has been deleted, please update this with @Persona muterole set <new role>')
 
     async def create_tables(self):
         # create postgres tables before anything
