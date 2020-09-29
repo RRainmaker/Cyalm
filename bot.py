@@ -8,7 +8,7 @@ from extras import Context
 class Persona(commands.Bot):
     'A Discord bot created by Rainmaker dedicated to the video game series Persona'
     def __init__(self):
-        super().__init__(command_prefix=self.prefix, description='A Discord bot based on the video game series Persona', case_insensitive=True)
+        super().__init__(command_prefix=self.prefix, description='A Discord bot based on the video game series Persona', case_insensitive=True, intents=discord.Intents().all())
         self.loop.create_task(self.create_tables())
         self.cooldown = commands.CooldownMapping.from_cooldown(7, 10, commands.BucketType.user)
         self.spam_strikes = {}
@@ -23,19 +23,19 @@ class Persona(commands.Bot):
         for member in await ctx.fetch('SELECT * FROM blacklist;'):
             blacklist.append(member['id'])
 
-        if not message.content.startswith(tuple(await self.get_prefix(message))) or ctx.author.id in blacklist or ctx.author is ctx.me:
+        if ctx.author.id in blacklist or ctx.author.bot:
             return
         
         if self.cooldown.get_bucket(message).update_rate_limit(message.created_at.timestamp()):
             authorid = ctx.author.id
             if authorid not in self.spam_strikes.keys():
                 self.spam_strikes[authorid] = 1
-                return
-            self.spam_strikes[authorid] += 1
-            if self.spam_strikes[authorid] >= 5:
-                del self.spam_strikes[authorid]
-                await ctx.execute(f"INSERT INTO blacklist (name, id, reason) VALUES('{ctx.author}', {authorid}, 'Excessive command spamming');")
-                return await ctx.send(f'{ctx.author.mention}, you are now blacklisted for excessive spamming')
+            else:
+                self.spam_strikes[authorid] += 1
+                if self.spam_strikes[authorid] >= 5:
+                    del self.spam_strikes[authorid]
+                    await ctx.execute(f"INSERT INTO blacklist (name, id, reason) VALUES('{ctx.author}', {authorid}, 'Excessive command spamming');")
+                    return await ctx.send(f'{ctx.author.mention}, you are now blacklisted for excessive spamming')
                 
         await self.invoke(ctx)
     
