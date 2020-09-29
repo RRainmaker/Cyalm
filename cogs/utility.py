@@ -1,13 +1,11 @@
 import discord
 from discord.ext import commands, menus
-import random
 import os
 import re
 import asyncio
 import itertools
 import datetime, humanize
 import math
-import typing
 
 class HelpPages:
     'A paginator class to paginate the help command'
@@ -114,7 +112,7 @@ class HelpPages:
         self.embed.description = '**Do not type in the brackets when providing inputs**'
         self.embed.add_field(name='<text>', value='This means that the input is required')
         self.embed.add_field(name='[text]', value='This means that the input is optional', inline=False)
-        self.embed.add_field(name='[text...]', value='This means that you can provide as many inputs as you want, but there must be at least one', inline=False)
+        self.embed.add_field(name='[text...] or [text]...', value='This means that you can provide as many inputs as you want, but there must be at least one', inline=False)
         self.embed.add_field(name='Aliases', value='This means the command can be invoked with the provided aliases', inline=False)
         self.embed.set_footer(text=f'Special Page   Use {self.ctx.prefix}help [command] for help on a command or cog')
         await self.message.edit(embed=self.embed)
@@ -198,19 +196,14 @@ class HelpCommand(commands.HelpCommand):
     async def send_command_help(self, command):
         aliases = ' | '.join(command.aliases)
         embed = discord.Embed(title=f'{command.qualified_name} {command.signature}', colour=self.context.pcolors, description=f'**Aliases:** {aliases}' if aliases else discord.Embed.Empty)
+        desc = ''
         if command.description:
-            embed.add_field(name='Description', value=command.description)
+            desc += f'{command.description}\n'
         if command.help:
-            embed.add_field(name='Additional Help', value=command.help, inline=False)
+            desc += f'{command.help}\n'
+        if desc:
+            embed.add_field(name='Description', value=desc)
         await self.context.send(embed=embed)
-
-    async def command_not_found(self, cmd):
-        await self.context.send(f'I could not find a command called `{cmd}`')
-
-    async def subcommand_not_found(self, command, string):
-        if isinstance(command, commands.Group) and len(command.all_commands) > 0:
-            return await self.context.send(f'I could not find a subcommand called `{string}`')
-        await self.context.send(f'The `{command}` command has no subcommands')
 
     async def command_callback(self, ctx, *, command=None):
         # the only reason i do this is to capitalize the cog name
@@ -221,22 +214,30 @@ class HelpCommand(commands.HelpCommand):
             return await self.send_bot_help()
 
         cog = ctx.bot.get_cog(command.capitalize())
+        
         if cog:
             return await self.send_cog_help(cog)
 
         keys = command.split(' ')
+        
         cmd = ctx.bot.all_commands.get(keys[0])
+        
         if not cmd:
-            return await self.command_not_found(keys[0])
+            return await self.context.send(f'I could not find a command called `{keys[0]}`')
 
         for key in keys[1:]:
             found = cmd.all_commands.get(key)
+            
             if not found:
-                return await self.subcommand_not_found(cmd, key)
+                if len(cmd.all_commands) > 0:
+                    return await self.context.send(f'I could not find a subcommand called `{key}`')
+                return await self.context.send(f'The `{cmd}` command has no subcommands')
+            
             cmd = found
 
         if isinstance(cmd, commands.Group):
             return await self.send_group_help(cmd)
+        
         else:
             return await self.send_command_help(cmd)
 
@@ -251,13 +252,13 @@ class Utility(commands.Cog):
     async def linecount(self, ctx):
         lines = filecount = 0
         
-        for path, subdir, files in os.walk('./cogs'):
+        for path, _, files in os.walk('./cogs'):
             for name in files:
                 if name.endswith('.py'):
                     filecount += 1
                     lines += len([line for line in open(f'{path}/{name}') if not line.strip().startswith(('#', "'", '"')) and len(line.strip()) > 0])
 
-        for path, subdir, files in os.walk('.'):
+        for path, _, files in os.walk('.'):
             for name in files:
                 if name == os.sys.argv[0]:
                     filecount += 1

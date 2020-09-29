@@ -1,12 +1,9 @@
 import discord
 from discord.ext import commands
-import asyncpg
 import wikia
 from extras import personas
 import random
-import typing
 import functools
-import asyncio
 
 class Persona(commands.Cog):
     "Commands related to Persona"
@@ -59,8 +56,10 @@ class Persona(commands.Cog):
         else:
             level = 1
 
+        reward = list(random.choice(list(personas.items())))
+
         # this iterates until the persona is equal or lower than the person's current level
-        while level <= list(random.choice(list(personas.items())))[0]:
+        while level <= reward[0]:
             reward = list(random.choice(list(personas.items())))
         
         if data:

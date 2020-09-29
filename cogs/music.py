@@ -6,7 +6,6 @@ import math
 import random
 import wavelink
 import re
-from collections import deque
 
 class Track(wavelink.Track):
     __slots__ = 'requester'

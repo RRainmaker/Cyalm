@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 
-
 class Moderation(commands.Cog):
     'Commands made by mods, for mods'
     def __init__(self, bot):
@@ -55,11 +54,27 @@ class Moderation(commands.Cog):
             if not mute_role:
                 return await ctx.send('Your server has not set a mute role yet, nor has a role named Muted')
         
-        for role in member.roles[1:]:
-            await member.remove_roles(role, reason='Stripped roles for muted')
-        
+        await member.remove_roles(*member.roles[1:], reason='Stripped roles for muted')        
         await member.add_roles(mute_role, reason=f'Muted by {ctx.author}')
         await ctx.send(f'Successfully muted {member.mention}')
+    
+    @commands.command(description="Remove someone's mute role")
+    async def unmute(self, ctx, *, member: discord.Member):
+        mute_role = await ctx.fetch('SELECT * FROM mod')
+        
+        if mute_role:
+            mute_role = ctx.guild.get_role(mute_role[0]['mute_role'])
+            
+            # deleting a mute role but still having another role called muted is an extremely rare case
+            # so id rather go with this
+            if not mute_role:
+                return await ctx.send('Your server has most likely deleted the custom mute role, so the person is already unmuted')
+        
+        if mute_role not in member.roles:
+            return await ctx.send('That person is already unmuted')
+
+        await member.remove_roles(*member.roles[1:], reason=f'Unmuted by {ctx.author}') 
+        await ctx.send(f'Successfully unmuted {member.mention}')
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
