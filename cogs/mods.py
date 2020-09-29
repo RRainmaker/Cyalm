@@ -76,7 +76,7 @@ class Moderation(commands.Cog):
                 if roles_to_remove:
                     return await member.remove_roles(roles_to_remove, reason=f'Unmuted by {ctx.author}')
                 else:
-                    return await ctx.send('That person does not have any role named Mutes')
+                    return await ctx.send('That person does not have any role named Muted')
 
         await member.remove_roles(mute_role, reason=f'Unmuted by {ctx.author}') 
         await ctx.send(f'Successfully unmuted {member.mention}')
