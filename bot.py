@@ -23,7 +23,7 @@ class Persona(commands.Bot):
         for member in await ctx.fetch('SELECT * FROM blacklist;'):
             blacklist.append(member['id'])
 
-        if not message.content.startswith(tuple(await self.get_prefix(message))) or ctx.author.id in blacklist or ctx.author is self.user:
+        if not message.content.startswith(tuple(await self.get_prefix(message))) or ctx.author.id in blacklist or ctx.author is ctx.me:
             return
         
         if self.cooldown.get_bucket(message).update_rate_limit(message.created_at.timestamp()):
