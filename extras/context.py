@@ -46,7 +46,7 @@ class Context(commands.Context):
     async def execute(cls, query, *args):
         async with asyncpg.create_pool(config.postgres) as pool:
             try:
-                return await pool.fetch(query, *args)
+                return await pool.execute(query, *args)
             finally:
                 await pool.close()
     
