@@ -52,7 +52,7 @@ class Player(wavelink.Player):
     async def start_controller(self):
         self.updating = True
 
-        embed = discord.Embed(title=f'<a:soundwaves:737809783867965521> Music Player @ {self.bot.get_channel(self.channel_id).name}', color=self.ctx.pcolors, description=f'Now Playing:\n[**`{self.current.title}`**]({self.current.uri})')
+        embed = discord.Embed(title=f'<a:soundwaves:737809783867965521> Music Player @ {self.bot.get_channel(self.channel_id)}', color=self.ctx.pcolors, description=f'Now Playing:\n[**`{self.current.title}`**]({self.current.uri})')
         
         if self.current.thumb: 
             embed.set_thumbnail(url=self.current.thumb)
@@ -195,9 +195,12 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             raise commands.CheckFailure('') # raise an exception because return doesnt stop the command
 
     async def cog_command_error(self, ctx, error):
-        if isinstance(error, commands.CheckFailure) and not ctx.guild:
-            # the only other error to raise check failure is no private messages
-            return await ctx.send(f'The `{ctx.command.name}` command can only be used in a server and not a DM')
+        if isinstance(error, commands.CheckFailure):
+            if not ctx.guild:
+                # the only other error to raise check failure is no private messages
+                return await ctx.send(f'The `{ctx.command.name}` command can only be used in a server and not a DM')
+            else:
+                return
 
         await ctx.send(embed=discord.Embed(title='An error was raised:', color=0xffffff, description=f'{error.__class__.__name__}: {error}'))
     
