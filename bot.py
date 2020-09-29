@@ -68,9 +68,21 @@ class Persona(commands.Bot):
                 
     async def on_user_update(self, before, after):
         # this is to update the blacklist in case they change their name/discrim
-        for member in await Context.fetch('SELECT * FROM blacklist;'):
+        for member in await Context.fetch('SELECT * FROM blacklist'):
             if before.id == member['id']:
                 return await Context.execute(f"UPDATE blacklist SET name = '{after}' WHERE id = {member['id']}")
+
+    async def on_guild_update(self, before, after):
+        # update the prefix/moderater tables with the new guild name
+        for guild in await Context.fetch('SELECT * FROM prefix'):
+            if guild['guild_id'] == before.id:
+                await Context.execute(f"UPDATE prefix SET name = '{after}' WHERE id = {after.id}")
+            else:
+                continue
+            
+        for guild in await Context.fetch('SELECT * FROM mod'):
+            if guild['guild_id'] == before.id:
+                return await Context.execute(f"UPDATE mod SET name = '{after}' WHERE id = {after.id}")
 
     async def create_tables(self):
         # create postgres tables before anything
