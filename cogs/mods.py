@@ -59,6 +59,7 @@ class Moderation(commands.Cog):
         await ctx.send(f'Successfully muted {member.mention}')
     
     @commands.command(description="Remove someone's mute role")
+    @commands.bot_has_permissions(manage_roles=True)
     async def unmute(self, ctx, *, member: discord.Member):
         mute_role = await ctx.fetch('SELECT * FROM mod')
         
