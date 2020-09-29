@@ -68,7 +68,7 @@ class Persona(commands.Bot):
         # this is to update the blacklist in case they change their name/discrim
         for member in await Context.fetch('SELECT * FROM blacklist;'):
             if before.id == member['id']:
-                await Context.execute(f"UPDATE blacklist SET name = '{after}' WHERE id = {member['id']}")
+                return await Context.execute(f"UPDATE blacklist SET name = '{after}' WHERE id = {member['id']}")
 
     async def create_tables(self):
         # create postgres tables before anything
