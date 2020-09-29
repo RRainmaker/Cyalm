@@ -184,12 +184,16 @@ class HelpCommand(commands.HelpCommand):
         pages.title = f'{group.qualified_name} {group.signature}'
         aliases = ' | '.join(group.aliases)
         desc = ''
+        
         if aliases:
             desc += f'**Aliases:** {aliases}\n'
+        
         if group.description:
             desc += f'{group.description}\n'
+        
         if group.help:
             desc += f'{group.help}'    
+        
         pages.description = desc
         await pages.start()
     
@@ -197,12 +201,16 @@ class HelpCommand(commands.HelpCommand):
         aliases = ' | '.join(command.aliases)
         embed = discord.Embed(title=f'{command.qualified_name} {command.signature}', colour=self.context.pcolors, description=f'**Aliases:** {aliases}' if aliases else discord.Embed.Empty)
         desc = ''
+        
         if command.description:
             desc += f'{command.description}\n'
+        
         if command.help:
             desc += f'{command.help}\n'
+        
         if desc:
             embed.add_field(name='Description', value=desc)
+        
         await self.context.send(embed=embed)
 
     async def command_callback(self, ctx, *, command=None):
@@ -254,7 +262,7 @@ class Utility(commands.Cog):
 
     @commands.command(description='Invite the bot to your server')
     async def invite(self, ctx):
-        await ctx.send(f'<https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&permissions=3229760&scope=bot>')
+        await ctx.send(f'<https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&permissions=271665216&scope=bot>')
     
     @commands.group(invoke_without_command=True, description='Show the prefix the bot uses on the current server', aliases=['prefixes'])
     async def prefix(self, ctx):
