@@ -357,7 +357,7 @@ class Utility(commands.Cog):
         
         await ctx.execute(f"UPDATE prefix SET prefixes = ARRAY{new_prefixes}::text[] WHERE guild_id = {ctx.guild.id}")
         
-        await ctx.send('Removed these prefixes: \n' + '\n'.join(new_prefixes))
+        await ctx.send('Removed these prefixes: \n' + '\n'.join(prefixes))
 
 def setup(bot): 
     bot.add_cog(Utility(bot))
