@@ -23,7 +23,7 @@ class Errors(commands.Cog):
             return await ctx.send(f'Sorry, but the {ctx.command} command is on cooldown for another {error.retry_after} seconds')
 
         if isinstance(error, commands.MaxConcurrencyReached):                                                 # strip away BucketType
-            return await ctx.send(f'The {ctx.command} can only be used by {error.number} people at a time on a {str(error.per)[11:]} basis')
+            return await ctx.send(f'The {ctx.command} command can only be used by {error.number} people at a time on a {str(error.per)[11:]} basis')
 
         if isinstance(error, commands.DisabledCommand):
             return await ctx.send(f'The {ctx.command.name} command is disabled for the time being')

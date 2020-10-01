@@ -37,7 +37,7 @@ class Persona(commands.Bot):
                     if self.spam_strikes[authorid] >= 5:
                         del self.spam_strikes[authorid]
                         await ctx.execute(f"INSERT INTO blacklist (name, id, reason) VALUES('{ctx.author}', {authorid}, 'Excessive command spamming');")
-                        return await ctx.send(f'{ctx.author.mention}, you are now blacklisted for excessive spamming')
+                        return await ctx.send(f'{ctx.author.mention}, you are now blacklisted for excessive command spamming')
 
             await self.invoke(ctx)
     
@@ -78,7 +78,7 @@ class Persona(commands.Bot):
             if guild['guild_id'] == before.id:
                 await Context.execute(f"UPDATE prefix SET name = '{after}' WHERE id = {after.id}")
             else:
-                continue
+                break
             
         for guild in await Context.fetch('SELECT * FROM mod'):
             if guild['guild_id'] == before.id:
@@ -88,7 +88,9 @@ class Persona(commands.Bot):
         for guild in await Context.fetch('SELECT * FROM mod'):
             if guild['mute_role'] == role.id and role.guild.system_channel:
                 await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE id = {role.guild.id}')                
-                return await role.guild.system_channel.send('The custom mute role has been deleted, please update this with @Persona muterole set <new role>')
+                
+                # let them know the mute role is gone and use @name as there is no way to check for a server prefix
+                return await role.guild.system_channel.send(f'The custom mute role has been deleted, please update this with @{self.user.name} muterole set <new role>')
 
     async def create_tables(self):
         # create postgres tables before anything

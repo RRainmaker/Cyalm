@@ -56,12 +56,12 @@ class HelpPages:
 
         perms = self.ctx.channel.permissions_for(self.ctx.me)
 
-        if not perms.embed_links:
-            return await self.ctx.send('I cannot continue the command as I lack the permission to embed')
-        
         if not perms.send_messages:
             # trying to tell them wont do anything
             return
+
+        if not perms.embed_links:
+            return await self.ctx.send('I cannot continue the command as I lack the permission to embed')
 
         if not initial:
             return await self.message.edit(embed=self.embed)
@@ -245,7 +245,6 @@ class HelpCommand(commands.HelpCommand):
 
         if isinstance(cmd, commands.Group):
             return await self.send_group_help(cmd)
-        
         else:
             return await self.send_command_help(cmd)
 
