@@ -80,11 +80,12 @@ class Persona(commands.Bot):
             await Context.execute(f"UPDATE prefix SET guild_name = '{after}' WHERE guild_id = {after.id}")
 
     async def on_guild_role_delete(self, role):
-        if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}', type='row') and role.guild.system_channel:
+        if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}', type='row'):
             await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE id = {role.guild.id}')
 
-            # let them know the mute role is gone and use @name as there is no way to check for a server prefix
-            return await role.guild.system_channel.send(f'The custom mute role has been deleted, please update this with @{self.user.name} muterole set <new role>')
+            if role.guild.system_channel:
+                # let them know the mute role is gone and use @name as there is no way to check for a server prefix
+                await role.guild.system_channel.send(f'The custom mute role has been deleted, please update this with @{self.user.name} muterole set <new role>')
 
     async def create_tables(self):
         # create postgres tables before anything
