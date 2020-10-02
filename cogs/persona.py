@@ -13,24 +13,28 @@ class Persona(commands.Cog):
     @commands.command(description='Check your profile or others profiles')
     async def profile(self, ctx, *, member: discord.Member = None):
         member = member or ctx.author
-        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {member.id};")
+        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {member.id};", type='row')
+        
         if not data:
             return await ctx.send(f'It seems {member} has no data')
-        data = data[0]
+        
         embed = discord.Embed(title=f"{member.name}'s profile")
         embed.set_thumbnail(url=member.avatar_url)
         embed.add_field(name='Money', value=f"¥{data['money']}")
         embed.add_field(name='Highest Level Persona', value=max(data['persona']))
         embed.add_field(name='Level', value=data['level'])
+        
         await ctx.send(embed=embed)
 
     @commands.command(description='See your Personas or the Personas of others')
     async def personas(self, ctx, *, member: discord.Member = None):
         member = member or ctx.author
-        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {member.id};")
+        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {member.id};", type='row')
+        
         if not data:
             return await ctx.send(f'It seems {member} does not have any Personas')
-        await ctx.send(f"{member.name}'s Personas: ```" + '\n'.join(data[0]['persona']) + '```')
+        
+        await ctx.send(f"{member.name}'s Personas: ```" + '\n'.join(data['persona']) + '```')
 
     @commands.command(aliases=['persona_info'], description='Get info about anything from the Persona wiki')
     async def personainfo(self, ctx, *, persona):
@@ -49,10 +53,10 @@ class Persona(commands.Cog):
 
     @commands.command(description='Get a random Persona', enabled=False)
     async def unpack(self, ctx):
-        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {ctx.author.id};")
+        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {ctx.author.id};", type='row')
 
         if data:
-            level = data[0]['level']
+            level = data['level']
         else:
             level = 1
 
@@ -63,7 +67,7 @@ class Persona(commands.Cog):
             reward = list(random.choice(list(personas.items())))
         
         if data:
-            await ctx.execute(f"UPDATE compendium SET persona = array_append(ARRAY{data[0]['persona']}, 'Lv. {reward[0]} {reward[1]}') WHERE id = {ctx.author.id}")
+            await ctx.execute(f"UPDATE compendium SET persona = array_append(ARRAY{data['persona']}, 'Lv. {reward[0]} {reward[1]}') WHERE id = {ctx.author.id}")
         else:
             await ctx.execute(f'''INSERT INTO compendium(name, id, persona, level, money) VALUES('{ctx.author.name}', {ctx.author.id}, ARRAY['Lv. {reward[0]} {reward[1]}'], {level}, 100)''')
         

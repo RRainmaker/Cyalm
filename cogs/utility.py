@@ -307,7 +307,7 @@ class Utility(commands.Cog):
         if self.bot.user.mention in prefixes:
             return await ctx.send(f'{self.bot.user.mention} is already a permanent prefix')
 
-        guild_data = await ctx.fetch(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}')
+        guild_data = await ctx.fetch(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}', type='row')
         keep_default_prefix = True
 
         # the person hasnt done this before, so prompt the user if they want the original prefixes
@@ -324,7 +324,7 @@ class Utility(commands.Cog):
         if not guild_data:                                                                                                                              
             await ctx.execute(f"INSERT INTO prefix (guild_name, guild_id, prefixes, no_default) VALUES('{ctx.guild.name}', {ctx.guild.id}, ARRAY{prefixes}, {keep_default_prefix})")
         else:
-            await ctx.execute(f"UPDATE prefix SET guild_name = '{ctx.guild.name}', prefixes = array_cat(ARRAY{guild_data[0]['prefixes']}::text[], ARRAY{prefixes}) WHERE guild_id = {ctx.guild.id}")
+            await ctx.execute(f"UPDATE prefix SET guild_name = '{ctx.guild.name}', prefixes = array_cat(ARRAY{guild_data['prefixes']}::text[], ARRAY{prefixes}) WHERE guild_id = {ctx.guild.id}")
         
         await ctx.send('The new server prefixes are: \n' + '\n'.join(prefixes))
     
@@ -338,12 +338,10 @@ class Utility(commands.Cog):
         if not prefixes:
             return await ctx.send('You need to provide prefixes for me to remove')
 
-        guild_prefix = await ctx.fetch(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}')
+        guild_prefix = await ctx.fetch(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}', type='row')
 
         if not guild_prefix:
             return await ctx.send('It seems your server has not set any prefixes yet')
-
-        guild_prefix = guild_prefix[0]
 
         if self.bot.user.mention in prefixes:
             return await ctx.send('You cannot remove a mention prefix')

@@ -34,21 +34,27 @@ class Context(commands.Context):
 
     # SQL functions
 
-    @classmethod
-    async def fetch(cls, query, *args):
+    @staticmethod
+    async def fetch(query, *args, type):
         async with asyncpg.create_pool(config.postgres) as pool:
             try:
-                return await pool.fetch(query, *args)
+                if type == 'all':
+                    return await pool.fetch(query, *args)
+                elif type == 'row':
+                    return await pool.fetchrow(query, *args)
+                elif type == 'val':
+                    return await pool.fetchval(query, *args)
             finally:
                 await pool.close()
 
-    @classmethod
-    async def execute(cls, query, *args):
+    @staticmethod
+    async def execute(query, *args):
         async with asyncpg.create_pool(config.postgres) as pool:
             try:
                 return await pool.execute(query, *args)
             finally:
                 await pool.close()
+    
     
     async def prompt(self, content, recipient: discord.Member, timeout: int):
         return await Confirmation(content, recipient, timeout).begin(self)

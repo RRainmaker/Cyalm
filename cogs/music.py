@@ -472,7 +472,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     
     @commands.command(description='Loop the current song')
     async def loop(self, ctx):
-        player: Player = self.bot.wavelink.get_player(ctx.guild.id, cls=Player, ctx=ctx)
+        player = self.bot.wavelink.get_player(ctx.guild.id, cls=Player, ctx=ctx)
 
         if not player.is_connected or not player.is_playing: 
             return await ctx.send('Currently, no song is playing')

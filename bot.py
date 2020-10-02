@@ -16,8 +16,7 @@ class Persona(commands.Bot):
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=Context)
         
-        if message.content.startswith(tuple(await self.get_prefix(message))):
-
+        if ctx.valid:
             if await self.is_owner(ctx.author):
                 return await self.invoke(ctx)
 
@@ -30,6 +29,7 @@ class Persona(commands.Bot):
         
             if self.cooldown.get_bucket(message).update_rate_limit(message.created_at.timestamp()):
                 authorid = ctx.author.id
+                
                 if authorid not in self.spam_strikes.keys():
                     self.spam_strikes[authorid] = 1
                 else:
@@ -48,12 +48,12 @@ class Persona(commands.Bot):
 
     async def prefix(self, bot, message):
         initial_prefixes = ['p!', 'persona!', 'P!']
+        
         if message.guild:
-            data = await Context.fetch(f'SELECT * FROM prefix WHERE guild_id = {message.guild.id}')
+            data = await Context.fetch(f'SELECT * FROM prefix WHERE guild_id = {message.guild.id}', type='row')
             if not data:
                 pass
             else:
-                data = data[0]
                 if not data['no_default']:
                     initial_prefixes = data['prefixes'][::-1]
                 elif data['prefixes']:
@@ -68,29 +68,23 @@ class Persona(commands.Bot):
                 
     async def on_user_update(self, before, after):
         # this is to update the blacklist in case they change their name/discrim
-        for member in await Context.fetch('SELECT * FROM blacklist'):
-            if before.id == member['id']:
-                return await Context.execute(f"UPDATE blacklist SET name = '{after}' WHERE id = {member['id']}")
+        if await Context.fetch(f'SELECT * FROM blacklist WHERE id = {before.id}', type='row'):
+            await Context.execute(f"UPDATE blacklist SET name = '{after}' WHERE id = {after.id}")
 
     async def on_guild_update(self, before, after):
         # update the prefix/moderater tables with the new guild name
-        for guild in await Context.fetch('SELECT * FROM prefix'):
-            if guild['guild_id'] == before.id:
-                await Context.execute(f"UPDATE prefix SET name = '{after}' WHERE id = {after.id}")
-            else:
-                break
+        if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {before.id}', type='row'):
+            await Context.execute(f"UPDATE mod SET guild_name = '{after}' WHERE guild_id = {after.id}")
             
-        for guild in await Context.fetch('SELECT * FROM mod'):
-            if guild['guild_id'] == before.id:
-                return await Context.execute(f"UPDATE mod SET name = '{after}' WHERE id = {after.id}")
+        if await Context.fetch(f'SELECT * FROM prefix WHERE guild_id = {before.id}', type='row'):
+            await Context.execute(f"UPDATE prefix SET guild_name = '{after}' WHERE guild_id = {after.id}")
 
     async def on_guild_role_delete(self, role):
-        for guild in await Context.fetch('SELECT * FROM mod'):
-            if guild['mute_role'] == role.id and role.guild.system_channel:
-                await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE id = {role.guild.id}')                
-                
-                # let them know the mute role is gone and use @name as there is no way to check for a server prefix
-                return await role.guild.system_channel.send(f'The custom mute role has been deleted, please update this with @{self.user.name} muterole set <new role>')
+        if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}', type='row') and role.guild.system_channel:
+            await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE id = {role.guild.id}')
+
+            # let them know the mute role is gone and use @name as there is no way to check for a server prefix
+            return await role.guild.system_channel.send(f'The custom mute role has been deleted, please update this with @{self.user.name} muterole set <new role>')
 
     async def create_tables(self):
         # create postgres tables before anything
