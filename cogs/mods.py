@@ -25,7 +25,7 @@ class Moderation(commands.Cog):
 
     @muterole.command(name='set', description='Set a custom mute role')
     async def muterole_set(self, ctx, *, role: discord.Role):
-        exists = await ctx.fetch(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}', type='row')
+        exists = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
         
         if exists:
             await ctx.execute(f"UPDATE mod SET guild_name = '{ctx.guild.name}', mute_role = {role.id} WHERE guild_id = {ctx.guild.id}")
@@ -41,7 +41,7 @@ class Moderation(commands.Cog):
         if ctx.me.roles[-1] < member.roles[-1]:
             return await ctx.send(f'The {member.roles[-1]} role is higher than my highest role, so I cannot remove their roles')
         
-        mute_role = await ctx.fetch(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}', type='row')
+        mute_role = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
         
         if mute_role:
             mute_role = ctx.guild.get_role(mute_role['mute_role'])
@@ -61,7 +61,7 @@ class Moderation(commands.Cog):
     @commands.command(description="Remove someone's mute role")
     @commands.bot_has_permissions(manage_roles=True)
     async def unmute(self, ctx, *, member: discord.Member):
-        mute_role = await ctx.fetch(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}', type='row')
+        mute_role = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
         
         if mute_role:
             mute_role = ctx.guild.get_role(mute_role['mute_role'])

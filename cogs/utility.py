@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands, menus
+from discord.ext import commands
 import os
 import re
 import asyncio
@@ -227,7 +227,6 @@ class HelpCommand(commands.HelpCommand):
             return await self.send_cog_help(cog)
 
         keys = command.split(' ')
-        
         cmd = ctx.bot.all_commands.get(keys[0])
         
         if not cmd:

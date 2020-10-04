@@ -32,18 +32,37 @@ class Context(commands.Context):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    async def prompt(self, content, recipient: discord.Member, timeout: int):
+        return await Confirmation(content, recipient, timeout).begin(self)
+    
+    @property
+    def pcolors(self):
+        'A property to randomly return blue, yellow and red, the theme colors of Persona 3/4/5'
+        return random.choice([0xff0000, 0x0000ff, 0xffff00])
+
     # SQL functions
 
     @staticmethod
-    async def fetch(query, *args, type):
+    async def fetch(query, *args):
         async with asyncpg.create_pool(config.postgres) as pool:
             try:
-                if type == 'all':
-                    return await pool.fetch(query, *args)
-                elif type == 'row':
-                    return await pool.fetchrow(query, *args)
-                elif type == 'val':
-                    return await pool.fetchval(query, *args)
+                return await pool.fetch(query, *args)
+            finally:
+                await pool.close()
+    
+    @staticmethod
+    async def fetchrow(query, *args):
+        async with asyncpg.create_pool(config.postgres) as pool:
+            try:
+                return await pool.fetchrow(query, *args)
+            finally:
+                await pool.close()
+
+    @staticmethod
+    async def fetchval(query, *args):
+        async with asyncpg.create_pool(config.postgres) as pool:
+            try:
+                return await pool.fetchval(query, *args)
             finally:
                 await pool.close()
 
@@ -54,12 +73,3 @@ class Context(commands.Context):
                 return await pool.execute(query, *args)
             finally:
                 await pool.close()
-    
-    
-    async def prompt(self, content, recipient: discord.Member, timeout: int):
-        return await Confirmation(content, recipient, timeout).begin(self)
-    
-    @property
-    def pcolors(self):
-        'A property to randomly return blue, yellow and red, the theme colors of Persona 3/4/5'
-        return random.choice([0xff0000, 0x0000ff, 0xffff00])

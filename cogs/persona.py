@@ -13,7 +13,7 @@ class Persona(commands.Cog):
     @commands.command(description='Check your profile or others profiles')
     async def profile(self, ctx, *, member: discord.Member = None):
         member = member or ctx.author
-        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {member.id};", type='row')
+        data = await ctx.fetchrow(f"SELECT * FROM compendium WHERE id = {member.id}")
         
         if not data:
             return await ctx.send(f'It seems {member} has no data')
@@ -29,7 +29,7 @@ class Persona(commands.Cog):
     @commands.command(description='See your Personas or the Personas of others')
     async def personas(self, ctx, *, member: discord.Member = None):
         member = member or ctx.author
-        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {member.id};", type='row')
+        data = await ctx.fetchrow(f"SELECT * FROM compendium WHERE id = {member.id}")
         
         if not data:
             return await ctx.send(f'It seems {member} does not have any Personas')
@@ -53,7 +53,7 @@ class Persona(commands.Cog):
 
     @commands.command(description='Get a random Persona', enabled=False)
     async def unpack(self, ctx):
-        data = await ctx.fetch(f"SELECT * FROM compendium WHERE id = {ctx.author.id};", type='row')
+        data = await ctx.fetchrow(f"SELECT * FROM compendium WHERE id = {ctx.author.id}")
 
         if data:
             level = data['level']
