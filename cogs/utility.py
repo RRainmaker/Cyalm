@@ -111,8 +111,8 @@ class HelpPages:
         self.embed.title = 'Reading the bot commands'
         self.embed.description = '**Do not type in the brackets when providing inputs**'
         self.embed.add_field(name='<text>', value='This means that the input is required')
-        self.embed.add_field(name='[text]', value='This means that the input is optional', inline=False)
-        self.embed.add_field(name='[text...] or [text]...', value='This means that you can provide as many inputs as you want, but there must be at least one', inline=False)
+        self.embed.add_field(name='[text] or [text=value]', value='This means that the input is optional, and the equal sign means the value it will default to', inline=False)
+        self.embed.add_field(name='[text...] or [text]...', value='This means that you can provide as many optional inputs as you want', inline=False)
         self.embed.add_field(name='Aliases', value='This means the command can be invoked with the provided aliases', inline=False)
         self.embed.set_footer(text=f'Special Page   Use {self.ctx.prefix}help [command] for help on a command or cog')
         await self.message.edit(embed=self.embed)
@@ -264,8 +264,7 @@ class Utility(commands.Cog):
     
     @commands.group(invoke_without_command=True, description='Show the prefix the bot uses on the current server', aliases=['prefixes'])
     async def prefix(self, ctx):
-        prefixes = await self.bot.get_prefix(ctx.message)
-        await ctx.send(embed=discord.Embed(title='Current Prefixes', description='**' + '\n'.join(prefixes[1:]) + '**', color=ctx.pcolors))
+        await ctx.send(embed=discord.Embed(title='Current Prefixes', description='**' + '\n'.join(await self.bot.get_prefix(ctx.message)) + '**', color=ctx.pcolors))
 
     @commands.command(description='How long the bot has been up for')
     async def uptime(self, ctx):
