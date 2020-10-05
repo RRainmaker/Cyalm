@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import typing
 
 class Moderation(commands.Cog):
     'Commands made by mods, for mods'
@@ -9,6 +10,67 @@ class Moderation(commands.Cog):
     async def cog_check(self, ctx):
         return ctx.channel.permissions_for(ctx.author).manage_guild
     
+    @commands.command(description='Kick someone out the server (they can still rejoin however)')
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
+    async def kick(self, ctx, member: discord.Member, *, reason=None):
+        await ctx.guild.kick(member, reason=reason)
+        await ctx.send(f'Kicked {member} out the server')
+
+    @commands.command(description='Kick multiple members out the server')
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
+    async def masskick(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
+        if not members:
+            return await ctx.send('I couldnt find anyone to ban')
+
+        for member in members:
+            await ctx.guild.kick(member, reason=reason)   
+
+        await ctx.send('Kicked these members:\n' + '\n'.join(member.name for member in members))
+
+    @commands.command(description='Ban someone from the server with an optional delete days number and an optional reason')
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    async def ban(self, ctx, member: discord.Member, delete_days: typing.Optional[int] = 1, *, reason=None):
+        if not 0 < delete_days < 7:
+            return await ctx.send('I cannot delete less than 0 days worth of messages, or greater than 7 days')
+        
+        await ctx.guild.ban(member, reason=reason, delete_message_days=delete_days)
+        await ctx.send(f'{member} has now been banned')
+
+    @commands.command(description='Ban multiple members, useful for raiders. Optional delete days number and reason')
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    async def massban(self, ctx, members: commands.Greedy[discord.Member], delete_days: typing.Optional[int] = 1, *, reason=None):
+        if not members:
+            return await ctx.send('I couldnt find anyone to ban')
+        
+        if not 0 < delete_days < 7:
+            return await ctx.send('I cannot delete less than 0 days worth of messages, or greater than 7 days')
+
+        for member in members:
+            await ctx.guild.ban(member, reason=reason, delete_message_days=delete_days)   
+
+        await ctx.send('Banned these members:\n' + '\n'.join(member.name for member in members))
+
+    @commands.command(description='Unban someone from the server by an ID or name#discrim')
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    async def unban(self, ctx, member, *, reason=None):
+        if member.isdigit():
+            try:
+                member = await ctx.guild.fetch_ban(discord.Object(member))
+            except discord.NotFound:
+                return await ctx.send('I couldnt find anyone by that ID')
+        else:
+            member = discord.utils.find(lambda u: str(u.user) == member, await ctx.guild.bans())
+            if not member:
+                return await ctx.send('I couldnt find anyone in the ban list by that name#discrim')
+        
+        await ctx.guild.unban(member.user, reason=reason)
+        await ctx.send(f'Unbanned {member.user}')
+
     @commands.group(invoke_without_command=True, description='The server mute role')
     async def muterole(self, ctx):
         role = await ctx.fetch('SELECT * FROM mod')
@@ -38,8 +100,8 @@ class Moderation(commands.Cog):
     @commands.bot_has_permissions(manage_roles=True)
     async def mute(self, ctx, *, member: discord.Member):
         "The target's highest role must be lower than the bot's highest role"       
-        if ctx.me.roles[-1] < member.roles[-1]:
-            return await ctx.send(f'The {member.roles[-1]} role is higher than my highest role, so I cannot remove their roles')
+        if ctx.me.top_role < member.top_role:
+            return await ctx.send(f'The {member.top_role} role is higher than my highest role, so I cannot remove their roles')
         
         mute_role = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
         
