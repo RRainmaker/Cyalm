@@ -81,7 +81,7 @@ class Persona(commands.Bot):
 
     async def on_guild_role_delete(self, role):
         if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}'):
-            await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE id = {role.guild.id}')
+            await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE guild_id = {role.guild.id}')
 
             if role.guild.system_channel:
                 # let them know the mute role is gone and use @name as there is no way to check for a server prefix
