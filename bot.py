@@ -47,7 +47,7 @@ class Persona(commands.Bot):
         await self.change_presence(activity=discord.Game('Persona 5 Royal (p!)'))
 
     async def prefix(self, bot, message):
-        initial_prefixes = ['p!', 'persona!', 'P!']
+        initial_prefixes = [f'<@!{bot.user.id}> ', 'p!', 'persona!', 'P!']
         
         if message.guild:
             data = await Context.fetchrow(f'SELECT * FROM prefix WHERE guild_id = {message.guild.id}')
@@ -59,7 +59,7 @@ class Persona(commands.Bot):
                 elif data['prefixes']:
                     initial_prefixes.extend(data['prefixes'][::-1])
                     
-        return commands.when_mentioned_or(*initial_prefixes)(bot, message)
+        return initial_prefixes
 
     async def on_guild_join(self, guild):
         for channel in guild.text_channels:
@@ -68,19 +68,19 @@ class Persona(commands.Bot):
                 
     async def on_user_update(self, before, after):
         # this is to update the blacklist in case they change their name/discrim
-        if await Context.fetchrow(f'SELECT * FROM blacklist WHERE id = {before.id}'):
+        if await Context.fetch(f'SELECT * FROM blacklist WHERE id = {before.id}'):
             await Context.execute(f"UPDATE blacklist SET name = '{after}' WHERE id = {after.id}")
 
     async def on_guild_update(self, before, after):
         # update the prefix/moderater tables with the new guild name
-        if await Context.fetchrow(f'SELECT * FROM mod WHERE guild_id = {before.id}'):
+        if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {before.id}'):
             await Context.execute(f"UPDATE mod SET guild_name = '{after}' WHERE guild_id = {after.id}")
             
-        if await Context.fetchrow(f'SELECT * FROM prefix WHERE guild_id = {before.id}'):
+        if await Context.fetch(f'SELECT * FROM prefix WHERE guild_id = {before.id}'):
             await Context.execute(f"UPDATE prefix SET guild_name = '{after}' WHERE guild_id = {after.id}")
 
     async def on_guild_role_delete(self, role):
-        if await Context.fetchrow(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}'):
+        if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}'):
             await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE id = {role.guild.id}')
 
             if role.guild.system_channel:
