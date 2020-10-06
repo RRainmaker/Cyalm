@@ -60,7 +60,7 @@ class Moderation(commands.Cog):
     async def unban(self, ctx, member, *, reason=None):
         if member.isdigit():
             try:
-                member = await ctx.guild.fetch_ban(discord.Object(int(member)))
+                member = await ctx.guild.fetch_ban(discord.Object(member))
             except discord.NotFound:
                 return await ctx.send('I couldnt find anyone by that ID')
         else:
@@ -73,17 +73,17 @@ class Moderation(commands.Cog):
 
     @commands.group(invoke_without_command=True, description='The server mute role')
     async def muterole(self, ctx):
-        role = await ctx.fetch('SELECT * FROM mod')
+        role = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
         
         if not role:
             return await ctx.send('Your server has not set a mute role, so I will to default to the first role named Muted')
         
-        exists = ctx.guild.get_role(role[0]['mute_role'])
+        role = ctx.guild.get_role(role['mute_role'])
         
-        if not exists:
+        if not role:
             return await ctx.send(f'The mute role has not been found, please update this with {ctx.prefix}muterole set <role>')
         
-        await ctx.send(f'The server mute role is: {exists}')
+        await ctx.send(f'The server mute role is: {role}')
 
     @muterole.command(name='set', description='Set a custom mute role')
     async def muterole_set(self, ctx, *, role: discord.Role):
