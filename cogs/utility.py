@@ -187,14 +187,14 @@ class HelpCommand(commands.HelpCommand):
         
         if aliases:
             desc += f'**Aliases:** {aliases}\n'
-        
         if group.description:
             desc += f'{group.description}\n'
-        
         if group.help:
             desc += f'{group.help}'    
         
-        pages.description = desc
+        if desc:
+            pages.description = desc
+        
         await pages.start()
     
     async def send_command_help(self, command):
@@ -204,7 +204,6 @@ class HelpCommand(commands.HelpCommand):
         
         if command.description:
             desc += f'{command.description}\n'
-        
         if command.help:
             desc += f'{command.help}\n'
         
@@ -305,7 +304,7 @@ class Utility(commands.Cog):
         if self.bot.user.mention in prefixes:
             return await ctx.send(f'{self.bot.user.mention} is already a permanent prefix')
 
-        guild_data = await ctx.fetch(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}', type='row')
+        guild_data = await ctx.fetchrow(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}')
         keep_default_prefix = True
 
         # the person hasnt done this before, so prompt the user if they want the original prefixes
@@ -336,7 +335,7 @@ class Utility(commands.Cog):
         if not prefixes:
             return await ctx.send('You need to provide prefixes for me to remove')
 
-        guild_prefix = await ctx.fetch(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}', type='row')
+        guild_prefix = await ctx.fetchrow(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}')
 
         if not guild_prefix:
             return await ctx.send('It seems your server has not set any prefixes yet')
