@@ -60,11 +60,11 @@ class Moderation(commands.Cog):
     async def unban(self, ctx, member, *, reason=None):
         if member.isdigit():
             try:
-                member = await ctx.guild.fetch_ban(discord.Object(member))
+                member = await ctx.guild.fetch_ban(discord.Object(int(member)))
             except discord.NotFound:
                 return await ctx.send('I couldnt find anyone by that ID')
         else:
-            member = discord.utils.find(lambda u: str(u.user) == member, await ctx.guild.bans())
+            member = discord.utils.find(lambda m: str(m.user) == member, await ctx.guild.bans())
             if not member:
                 return await ctx.send('I couldnt find anyone in the ban list by that name#discrim')
         
