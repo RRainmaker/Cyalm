@@ -1,5 +1,6 @@
+from inspect import signature
 import discord
-from discord.ext import commands
+from discord.ext import commands, flags
 import os
 import re
 import asyncio
@@ -12,7 +13,6 @@ class HelpPages:
     def __init__(self, ctx, entries, per_page=6, preset_header=False):
         self.ctx = ctx
         self.entries = entries
-        self.message = ctx.message
         self.per_page = per_page
         self.preset = preset_header
         
@@ -51,7 +51,8 @@ class HelpPages:
         self.embed.title = self.title
         self.embed.description = self.description
         for entry in entries:
-            self.embed.add_field(name=f'{entry.qualified_name} {entry.signature}', value=entry.description or entry.short_doc or 'No description', inline=False)
+            signature = getattr(entry, 'old_signature', 'signature')
+            self.embed.add_field(name=f'{entry.qualified_name} {signature}', value=entry.description or entry.short_doc or 'No description', inline=False)
         self.embed.set_footer(text=f'Page {page}/{self.max_pages}   Use {self.ctx.prefix}help [command] for help on a command or cog')
 
         perms = self.ctx.channel.permissions_for(self.ctx.me)
@@ -199,9 +200,10 @@ class HelpCommand(commands.HelpCommand):
     
     async def send_command_help(self, command):
         aliases = ' | '.join(command.aliases)
-        embed = discord.Embed(title=f'{command.qualified_name} {command.signature}', colour=self.context.pcolors, description=f'**Aliases:** {aliases}' if aliases else discord.Embed.Empty)
+        signature = getattr(command, 'old_signature', 'signature')
+        embed = discord.Embed(title=f'{command.qualified_name} {signature}', colour=self.context.pcolors, description=f'**Aliases:** {aliases}' if aliases else discord.Embed.Empty)
         desc = ''
-        
+
         if command.description:
             desc += f'{command.description}\n'
         if command.help:
