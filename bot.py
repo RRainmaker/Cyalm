@@ -80,7 +80,8 @@ class Persona(commands.Bot):
             await Context.execute(f"UPDATE prefix SET guild_name = '{after}' WHERE guild_id = {after.id}")
 
     async def on_guild_role_delete(self, role):
-        if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}'):
+        guild_data = await Context.fetchrow(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}')
+        if guild_data and guild_data['mute_role'] == role.id:
             await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE guild_id = {role.guild.id}')
 
             if role.guild.system_channel:
