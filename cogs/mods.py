@@ -1,5 +1,6 @@
+import re
 import discord
-from discord.ext import commands
+from discord.ext import commands, flags
 import typing
 
 class Moderation(commands.Cog):
@@ -13,51 +14,69 @@ class Moderation(commands.Cog):
     @commands.command(description='Kick someone out the server (they can still rejoin however)')
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
-    async def kick(self, ctx, member: discord.Member, *, reason=None):
+    async def kick(self, ctx, member: discord.Member, *, reason='Unspecified reasons'):
         await ctx.guild.kick(member, reason=reason)
-        await ctx.send(f'Kicked {member} out the server')
+        await ctx.send(f'Kicked {member} out the server. Reason: {reason}')
 
     @commands.command(description='Kick multiple members out the server')
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
-    async def masskick(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
+    async def masskick(self, ctx, members: commands.Greedy[discord.Member], *, reason='Unspecified reasons'):
         if not members:
             return await ctx.send('I couldnt find anyone to ban')
 
         for member in members:
             await ctx.guild.kick(member, reason=reason)   
 
-        await ctx.send('Kicked these members:\n' + '\n'.join(member.name for member in members))
+        await ctx.send(f'Kicked {len(members)} members. Reason: {reason}')
 
-    @commands.command(description='Ban someone from the server with an optional delete days number and an optional reason')
+    @commands.command(cls=flags.FlagCommand, description='Ban someone from the server with an optional delete days number and an optional reason')
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def ban(self, ctx, member: discord.Member, delete_days: typing.Optional[int] = 1, *, reason=None):
-        if not 0 < delete_days < 7:
+    @flags.add_flag('-days', type=int, default=1)
+    @flags.add_flag('-reason', type=str, nargs='+')
+    async def ban(self, ctx, member: discord.Member, **options):
+        '''Use like so: p!ban @member -days 1-7 -reason reason for the ban
+           
+           The -days flag indicates how many days of messages to delete between 1 and 7 
+           (defaults to 1)
+           
+           The -reason flag is for the reason 
+           (shows up on audit log)'''
+        
+        if not 0 < options['days'] < 7:
             return await ctx.send('I cannot delete less than 0 days worth of messages, or greater than 7 days')
         
-        await ctx.guild.ban(member, reason=reason, delete_message_days=delete_days)
-        await ctx.send(f'{member} has now been banned')
+        reason = ' '.join(options['reason']) or 'Unspecified reasons'
 
-    @commands.command(description='Ban multiple members, useful for raiders. Optional delete days number and reason')
+        await ctx.guild.ban(member, reason=reason, delete_message_days=options['days'])
+        await ctx.send(f'{member} has now been banned. Reason: {reason}')
+
+    @commands.command(cls=flags.FlagCommand, description='Ban multiple members, useful for raiders. Optional delete days number and reason')
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def massban(self, ctx, members: commands.Greedy[discord.Member], delete_days: typing.Optional[int] = 1, *, reason=None):
+    @flags.add_flag('-days', type=int, default=1)
+    @flags.add_flag('-reason', type=str, nargs='+')
+    async def massban(self, ctx, members: commands.Greedy[discord.Member], **options):
+        '''Use like so: p!massban @member1 @member2 @member3 -days 1-7 -reason reason given for ban
+           As with the ban command, the -days flag indicates how many days worth of messages to delete and the -reason flag is for the audit log'''
         if not members:
             return await ctx.send('I couldnt find anyone to ban')
         
-        if not 0 < delete_days < 7:
-            return await ctx.send('I cannot delete less than 0 days worth of messages, or greater than 7 days')
+        if not 0 < options['days'] < 7:
+            return await ctx.send('I cannot delete less than 0 days worth of messages, or more than 7 days')
+
+        reason = ' '.join(options['reason']) or 'Unspecified reasons'
 
         for member in members:
-            await ctx.guild.ban(member, reason=reason, delete_message_days=delete_days)   
+            await ctx.guild.ban(member, reason=reason, delete_message_days=options['days'])  
 
-        await ctx.send('Banned these members:\n' + '\n'.join(member.name for member in members))
+        await ctx.send(f'Banned {len(members)} member(s). Reason: {reason}')
 
     @commands.command(description='Unban someone from the server by an ID or name#discrim')
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def unban(self, ctx, member, *, reason=None):
+    async def unban(self, ctx, member, *, reason='Unspecified reasons'):
         if member.isdigit():
             try:
                 member = await ctx.guild.fetch_ban(discord.Object(member))
