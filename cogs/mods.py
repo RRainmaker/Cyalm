@@ -17,7 +17,7 @@ class Moderation(commands.Cog):
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     async def masskick(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
-        'Use like so: p!ban @member @member2 @member3 reason for ban'
+        'Use like so: p!ban @member @member2 @member3 reason for kick'
         if not members:
             return await ctx.send('I couldnt find anyone to ban')
 
@@ -89,7 +89,7 @@ class Moderation(commands.Cog):
         await ctx.send(f'Unbanned {member.user}. Reason: {reason}')
 
     @commands.group(invoke_without_command=True, description='The server mute role')
-    @commands.has_permissions(manage_roles=True)
+    @commands.has_permissions(manage_guild=True)
     async def muterole(self, ctx):
         role = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
         
@@ -104,6 +104,7 @@ class Moderation(commands.Cog):
         await ctx.send(f'The server mute role is: {role}')
 
     @muterole.command(name='set', description='Set a custom mute role')
+    @commands.has_permissions(manage_guild=True)
     async def muterole_set(self, ctx, *, role: discord.Role):
         exists = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
         
@@ -115,6 +116,7 @@ class Moderation(commands.Cog):
         await ctx.send(f'The new server mute role is now {role}')
     
     @commands.command(aliases=['silence'], description='Strip someone of all their roles and mute them')
+    @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def mute(self, ctx, *, member: discord.Member):
         "The target's highest role must be lower than the bot's highest role"       
@@ -139,6 +141,7 @@ class Moderation(commands.Cog):
         await ctx.send(f'Successfully muted {member.mention}')
     
     @commands.command(description="Remove someone's mute role")
+    @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def unmute(self, ctx, *, member: discord.Member):
         mute_role = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
