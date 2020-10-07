@@ -19,7 +19,7 @@ class Moderation(commands.Cog):
     async def masskick(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
         'Use like so: p!ban @member @member2 @member3 reason for kick'
         if not members:
-            return await ctx.send('I couldnt find anyone to ban')
+            return await ctx.send('I couldnt find anyone to kick')
 
         for member in members:
             await ctx.guild.kick(member, reason=reason)   
