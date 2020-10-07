@@ -1,27 +1,23 @@
-import re
 import discord
 from discord.ext import commands, flags
-import typing
 
 class Moderation(commands.Cog):
     'Commands made by mods, for mods'
     def __init__(self, bot):
         self.bot = bot
     
-    async def cog_check(self, ctx):
-        return ctx.channel.permissions_for(ctx.author).manage_guild
-    
     @commands.command(description='Kick someone out the server (they can still rejoin however)')
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
-    async def kick(self, ctx, member: discord.Member, *, reason='Unspecified reasons'):
+    async def kick(self, ctx, member: discord.Member, *, reason=None):
         await ctx.guild.kick(member, reason=reason)
         await ctx.send(f'Kicked {member} out the server. Reason: {reason}')
 
     @commands.command(description='Kick multiple members out the server')
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
-    async def masskick(self, ctx, members: commands.Greedy[discord.Member], *, reason='Unspecified reasons'):
+    async def masskick(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
+        'Use like so: p!ban @member @member2 @member3 reason for ban'
         if not members:
             return await ctx.send('I couldnt find anyone to ban')
 
@@ -47,7 +43,7 @@ class Moderation(commands.Cog):
         if not 0 < options['days'] < 7:
             return await ctx.send('I cannot delete less than 0 days worth of messages, or greater than 7 days')
         
-        reason = ' '.join(options['reason']) or 'Unspecified reasons'
+        reason = ' '.join(options['reason']) or None
 
         await ctx.guild.ban(member, reason=reason, delete_message_days=options['days'])
         await ctx.send(f'{member} has now been banned. Reason: {reason}')
@@ -59,14 +55,16 @@ class Moderation(commands.Cog):
     @flags.add_flag('-reason', type=str, nargs='+')
     async def massban(self, ctx, members: commands.Greedy[discord.Member], **options):
         '''Use like so: p!massban @member1 @member2 @member3 -days 1-7 -reason reason given for ban
-           As with the ban command, the -days flag indicates how many days worth of messages to delete and the -reason flag is for the audit log'''
+           As with the ban command, the -days flag indicates how many days worth of messages to delete and the -reason flag is for the audit log
+           Use p!help ban for more info'''
         if not members:
             return await ctx.send('I couldnt find anyone to ban')
         
         if not 0 < options['days'] < 7:
             return await ctx.send('I cannot delete less than 0 days worth of messages, or more than 7 days')
 
-        reason = ' '.join(options['reason']) or 'Unspecified reasons'
+        if options['reason']:
+            reason = ' '.join(options['reason'])
 
         for member in members:
             await ctx.guild.ban(member, reason=reason, delete_message_days=options['days'])  
@@ -76,7 +74,7 @@ class Moderation(commands.Cog):
     @commands.command(description='Unban someone from the server by an ID or name#discrim')
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
-    async def unban(self, ctx, member, *, reason='Unspecified reasons'):
+    async def unban(self, ctx, member, *, reason=None):
         if member.isdigit():
             try:
                 member = await ctx.guild.fetch_ban(discord.Object(member))
@@ -88,9 +86,10 @@ class Moderation(commands.Cog):
                 return await ctx.send('I couldnt find anyone in the ban list by that name#discrim')
         
         await ctx.guild.unban(member.user, reason=reason)
-        await ctx.send(f'Unbanned {member.user}')
+        await ctx.send(f'Unbanned {member.user}. Reason: {reason}')
 
     @commands.group(invoke_without_command=True, description='The server mute role')
+    @commands.has_permissions(manage_roles=True)
     async def muterole(self, ctx):
         role = await ctx.fetchrow(f'SELECT * FROM mod WHERE guild_id = {ctx.guild.id}')
         

@@ -51,7 +51,7 @@ class HelpPages:
         self.embed.title = self.title
         self.embed.description = self.description
         for entry in entries:
-            signature = getattr(entry, 'old_signature', 'signature')
+            signature = getattr(entry, 'old_signature', entry.signature)
             self.embed.add_field(name=f'{entry.qualified_name} {signature}', value=entry.description or entry.short_doc or 'No description', inline=False)
         self.embed.set_footer(text=f'Page {page}/{self.max_pages}   Use {self.ctx.prefix}help [command] for help on a command or cog')
 
@@ -79,7 +79,7 @@ class HelpPages:
                 await self.message.add_reaction(reaction)
             except discord.Forbidden:
                 return await self.ctx.send('I cannot continue the command as I lack the permission to add reactions')
-
+            
     async def first(self):
         await self.show_page(1)
 
@@ -113,7 +113,7 @@ class HelpPages:
         self.embed.description = '**Do not type in the brackets when providing inputs**'
         self.embed.add_field(name='<text>', value='This means that the input is required')
         self.embed.add_field(name='[text] or [text=value]', value='This means that the input is optional, and the equal sign means the value it will default to', inline=False)
-        self.embed.add_field(name='[text...] or [text]...', value='This means that you can provide as many optional inputs as you want', inline=False)
+        self.embed.add_field(name='[text...] or [text]...', value='This means that you can provide as many inputs as you want', inline=False)
         self.embed.add_field(name='Aliases', value='This means the command can be invoked with the provided aliases', inline=False)
         self.embed.set_footer(text=f'Special Page   Use {self.ctx.prefix}help [command] for help on a command or cog')
         await self.message.edit(embed=self.embed)
@@ -200,7 +200,7 @@ class HelpCommand(commands.HelpCommand):
     
     async def send_command_help(self, command):
         aliases = ' | '.join(command.aliases)
-        signature = getattr(command, 'old_signature', 'signature')
+        signature = getattr(command, 'old_signature', command.signature)
         embed = discord.Embed(title=f'{command.qualified_name} {signature}', colour=self.context.pcolors, description=f'**Aliases:** {aliases}' if aliases else discord.Embed.Empty)
         desc = ''
 

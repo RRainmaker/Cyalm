@@ -10,7 +10,7 @@ class Persona(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(description='Check your profile or others profiles')
+    @commands.command(description='Check your profile or others profiles (WIP)')
     async def profile(self, ctx, *, member: discord.Member = None):
         member = member or ctx.author
         data = await ctx.fetchrow(f"SELECT * FROM compendium WHERE id = {member.id}")
@@ -26,7 +26,7 @@ class Persona(commands.Cog):
         
         await ctx.send(embed=embed)
 
-    @commands.command(description='See your Personas or the Personas of others')
+    @commands.command(description='See your Personas or the Personas of others (WIP)')
     async def personas(self, ctx, *, member: discord.Member = None):
         member = member or ctx.author
         data = await ctx.fetchrow(f"SELECT * FROM compendium WHERE id = {member.id}")
@@ -51,7 +51,8 @@ class Persona(commands.Cog):
         persona = ' '.join([word.capitalize() for word in persona.split(' ')])
         await ctx.send(embed=await self.bot.loop.run_in_executor(None, functools.partial(wiki_finder, persona)))
 
-    @commands.command(description='Get a random Persona', enabled=False)
+    @commands.command(description='Get a random Persona')
+    @commands.cooldown(1, 500, commands.BucketType.user)
     async def unpack(self, ctx):
         data = await ctx.fetchrow(f"SELECT * FROM compendium WHERE id = {ctx.author.id}")
 

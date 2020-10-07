@@ -31,8 +31,8 @@ class Errors(commands.Cog):
         if isinstance(error, commands.NotOwner):
             return await ctx.send('This command can only be used by my owner')
         
-        if isinstance(error, commands.BadArgument):
-            return await ctx.send(error) # no need to do anything special for bad arguments
+        if isinstance(error, (commands.BadArgument, commands.MissingPermissions)):
+            return await ctx.send(error) # no need to do anything special for bad arguments or missing permissions
 
         if isinstance(error, commands.MissingRequiredArgument):
             return await ctx.send(f'I seem to be missing the `{error.param.name}` input in {ctx.command.name}')
