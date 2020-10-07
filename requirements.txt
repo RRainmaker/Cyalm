@@ -6,3 +6,4 @@ wikia
 git+https://github.com/Rapptz/discord-ext-menus
 jishaku
 parsedatetime
+discord-flags
