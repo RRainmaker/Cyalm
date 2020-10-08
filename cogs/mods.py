@@ -62,9 +62,8 @@ class Moderation(commands.Cog):
         
         if not 0 < options['days'] < 7:
             return await ctx.send('I cannot delete less than 0 days worth of messages, or more than 7 days')
-
-        if options['reason']:
-            reason = ' '.join(options['reason'])
+        
+        reason = ' '.join(options['reason']) or None
 
         for member in members:
             await ctx.guild.ban(member, reason=reason, delete_message_days=options['days'])  
