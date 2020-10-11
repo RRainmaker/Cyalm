@@ -181,7 +181,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                                               region='us_east')
     
     async def cog_check(self, ctx):
-        return ctx.guild
+        if not ctx.guild:
+            raise commands.NoPrivateMessage()
+        return True
 
     async def cog_before_invoke(self, ctx):
         player = self.bot.wavelink.get_player(ctx.guild.id, cls=Player, ctx=ctx)
@@ -192,17 +194,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         
         if player.is_connected and ctx.author not in channel.members or player.ctx and player.ctx.channel != ctx.channel:
             await ctx.send(f'Music commands are only usable in `{player.ctx.channel.name}` at the `{channel.name}` VC')
-            raise commands.CheckFailure('') # raise an exception because return doesnt stop the command
-
-    async def cog_command_error(self, ctx, error):
-        if isinstance(error, commands.CheckFailure):
-            if not ctx.guild:
-                # the only other error to raise check failure is no private messages
-                return await ctx.send(f'The `{ctx.command.name}` command can only be used in a server and not a DM')
-            else:
-                return
-
-        await ctx.send(embed=discord.Embed(title='An error was raised:', color=0xffffff, description=f'{error.__class__.__name__}: {error}'))
+            raise commands.CheckFailure() # raise an exception because return doesnt stop the command
     
     def cog_unload(self):
         self.bot.loop.create_task(self.startup())
