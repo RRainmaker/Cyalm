@@ -8,11 +8,11 @@ from extras import Context
 class Persona(commands.Bot):
     'A Discord bot created by Rainmaker dedicated to the video game series Persona'
     def __init__(self):
-        super().__init__(command_prefix=self.prefix, description='A Discord bot based on the video game series Persona', case_insensitive=True, intents=discord.Intents().all())
+        super().__init__(command_prefix=self.prefix, description='A Discord bot based on the video game series Persona', case_insensitive=True, intents=discord.Intents.all())
         self.loop.create_task(self.create_tables())
         self.cooldown = commands.CooldownMapping.from_cooldown(7, 10, commands.BucketType.user)
         self.spam_strikes = {}
-    
+
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=Context)
         
@@ -105,5 +105,12 @@ class Persona(commands.Bot):
     @property
     def config(self):
         return __import__('config')
+    
+    # the default mention returns <@!id> only if the member has a nickname
+    # otherwise, it returns <@id>
+    # so i make my own here which always returns <@!id>
+    @property
+    def mention(self):
+        return f'<@!{self.user.id}>'
 
 Persona().run()

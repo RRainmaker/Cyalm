@@ -1,6 +1,5 @@
-from inspect import signature
 import discord
-from discord.ext import commands, flags
+from discord.ext import commands
 import os
 import re
 import asyncio
@@ -146,7 +145,7 @@ class HelpPages:
                 pass
 
             await self.effect()
-    
+
 class HelpCommand(commands.HelpCommand):
     async def send_bot_help(self):
         key = lambda c: c.cog_name or 'Miscellaneous'
@@ -154,12 +153,14 @@ class HelpCommand(commands.HelpCommand):
         per_page = 7
 
         for cog, commands in itertools.groupby(await self.filter_commands(self.context.bot.commands, sort=True, key=key), key):
-            commands = sorted(commands, key=key)
+            # alphabetizes the commands
+            commands = sorted(sorted(commands, key=key), key=lambda c: c.qualified_name)
+            
             if len(commands) == 0: 
                 continue
             
-            true_cog = self.context.bot.get_cog(cog)
-            command_list.extend((cog, (true_cog and true_cog.description) or discord.Embed.Empty, commands[i:i + per_page]) for i in range(0, len(commands), per_page))
+            cog = self.context.bot.get_cog(cog)
+            command_list.extend((cog.qualified_name, cog.description or discord.Embed.Empty, commands[i:i + per_page]) for i in range(0, len(commands), per_page))
 
         pages = HelpPages(self.context, command_list, per_page=1, preset_header=True)
         await pages.start()
@@ -178,6 +179,7 @@ class HelpCommand(commands.HelpCommand):
 
     async def send_group_help(self, group):
         commands = await self.filter_commands(group.commands, sort=True)
+        
         if len(commands) == 0:
             return await self.send_command_help(group)
 
@@ -294,17 +296,21 @@ class Utility(commands.Cog):
         await ctx.send(f'{lines} lines across {filecount} files')
 
     @prefix.command(description='Change the prefix of the bot for the server')
-    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guild_only()
     @commands.max_concurrency(1, commands.BucketType.guild) # make sure other people arent also trying to change the prefix
+    @commands.has_permissions(manage_guild=True)
     async def add(self, ctx, *prefixes):
         '''Use the command like so: 
         `p!prefix add prefix1 prefix2`
         Make sure to seperate each prefix with space'''
         if not prefixes:
             return await ctx.send('You need to provide prefixes for me to use')
-        
-        if self.bot.user.mention in prefixes:
-            return await ctx.send(f'{self.bot.user.mention} is already a permanent prefix')
+
+        prefixes = [prefix for prefix in set(prefixes) if prefix != self.bot.mention][::-1]
+
+        if not prefixes:
+            # this means all prefixes removed were mentions
+            return await ctx.send('You cannot add another mention prefix')
 
         guild_data = await ctx.fetchrow(f'SELECT * FROM prefix WHERE guild_id = {ctx.guild.id}')
         keep_default_prefix = True
@@ -313,12 +319,10 @@ class Utility(commands.Cog):
         # this only prompts once, however
         if not guild_data:
             if not await ctx.prompt('Would you like to keep my initial prefixes? (p! persona! P!)', ctx.author, timeout=30):
-                await ctx.send('My original prefixes will be overrided, you can still manually add them later however')
+                await ctx.send(f'My original prefixes will be overrided\nYou can still manually add them later with {ctx.prefix}prefix add')
                 keep_default_prefix = False
             else:
-                await ctx.send('I will be using both my original prefixes and the new ones. You can remove existing ones with p!prefix remove')
-        
-        prefixes = list(set(prefixes))[::-1]
+                await ctx.send(f'I will be using both my original prefixes and the new ones\nYou can remove existing ones with {ctx.prefix}prefix remove')
 
         if not guild_data:                                                                                                                              
             await ctx.execute(f"INSERT INTO prefix (guild_name, guild_id, prefixes, no_default) VALUES('{ctx.guild.name}', {ctx.guild.id}, ARRAY{prefixes}, {keep_default_prefix})")
@@ -328,7 +332,8 @@ class Utility(commands.Cog):
         await ctx.send('The new server prefixes are: \n' + '\n'.join(prefixes))
     
     @prefix.command(description='Remove a prefix from the list')
-    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild) 
     async def remove(self, ctx, *prefixes):
         '''Similarly to prefix add, use the command like so:
@@ -342,14 +347,11 @@ class Utility(commands.Cog):
         if not guild_prefix:
             return await ctx.send('It seems your server has not set any prefixes yet')
 
-        if self.bot.user.mention in prefixes:
-            return await ctx.send('You cannot remove a mention prefix')
-
         for prefix in prefixes:
             if prefix not in guild_prefix['prefixes']:
                 return await ctx.send(f'{prefix} is not a prefix your server has')
 
-        new_prefixes = [prefix for prefix in guild_prefix['prefixes'] if prefix not in prefixes]
+        new_prefixes = [prefix for prefix in guild_prefix['prefixes'] if prefix not in prefixes and prefix != self.bot.mention]
         
         await ctx.execute(f"UPDATE prefix SET prefixes = ARRAY{new_prefixes}::text[] WHERE guild_id = {ctx.guild.id}")
         
