@@ -10,7 +10,7 @@ class Errors(commands.Cog):
     async def on_command_error(self, ctx, error):
         error = getattr(error, 'original', error)
 
-        if hasattr(ctx.command, 'on_error') or isinstance(error, commands.CommandNotFound):
+        if ctx.cog and ctx.cog._get_overridden_method(ctx.cog.cog_command_error) or hasattr(ctx.command, 'on_error') or isinstance(error, commands.CommandNotFound):
             return
 
         if isinstance(error, commands.NoPrivateMessage):
