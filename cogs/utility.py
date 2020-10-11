@@ -159,8 +159,8 @@ class HelpCommand(commands.HelpCommand):
             if len(commands) == 0: 
                 continue
             
-            cog = self.context.bot.get_cog(cog)
-            command_list.extend((cog.qualified_name, cog.description or discord.Embed.Empty, commands[i:i + per_page]) for i in range(0, len(commands), per_page))
+            cog_desc = self.context.bot.get_cog(cog)
+            command_list.extend((cog, (cog_desc and cog_desc.description) or discord.Embed.Empty, commands[i:i + per_page]) for i in range(0, len(commands), per_page))
 
         pages = HelpPages(self.context, command_list, per_page=1, preset_header=True)
         await pages.start()
