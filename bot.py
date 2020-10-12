@@ -47,7 +47,7 @@ class Persona(commands.Bot):
         await self.change_presence(activity=discord.Game('Persona 5 Royal (p!)'))
 
     async def prefix(self, bot, message):
-        initial_prefixes = [f'<@!{bot.user.id}> ', 'p!', 'persona!', 'P!']
+        initial_prefixes = ['p!', 'persona!', 'P!']
         
         if message.guild:
             data = await Context.fetchrow(f'SELECT * FROM prefix WHERE guild_id = {message.guild.id}')
@@ -58,7 +58,9 @@ class Persona(commands.Bot):
                     initial_prefixes = data['prefixes'][::-1]
                 elif data['prefixes']:
                     initial_prefixes.extend(data['prefixes'][::-1])
-                    
+        
+        initial_prefixes.append(self.mention)
+              
         return initial_prefixes
 
     async def on_guild_join(self, guild):
