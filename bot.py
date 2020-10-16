@@ -13,6 +13,11 @@ class Persona(commands.Bot):
         self.cooldown = commands.CooldownMapping.from_cooldown(7, 10, commands.BucketType.user)
         self.spam_strikes = {}
 
+    async def on_ready(self):
+        self.start_time = datetime.datetime.now()
+        print(f'{self.user} is online and ready')
+        await self.change_presence(activity=discord.Game('Persona 5 Royal (p!)'))
+
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=Context)
         
@@ -38,13 +43,8 @@ class Persona(commands.Bot):
                         del self.spam_strikes[authorid]
                         await ctx.execute(f"INSERT INTO blacklist (name, id, reason) VALUES('{ctx.author}', {authorid}, 'Excessive command spamming');")
                         return await ctx.send(f'{ctx.author.mention}, you are now blacklisted for excessive command spamming')
-
+            
             await self.invoke(ctx)
-    
-    async def on_ready(self):
-        self.start_time = datetime.datetime.now()
-        print(f'{self.user} is online and ready')
-        await self.change_presence(activity=discord.Game('Persona 5 Royal (p!)'))
 
     async def prefix(self, bot, message):
         initial_prefixes = ['p!', 'persona!', 'P!']
@@ -59,9 +59,19 @@ class Persona(commands.Bot):
                 elif data['prefixes']:
                     initial_prefixes.extend(data['prefixes'][::-1])
         
-        initial_prefixes.append(self.mention)
-              
+        initial_prefixes.append(self.mention + ' ')
+        
         return initial_prefixes
+
+    async def on_member_join(self, member):
+        guild_data = await Context.fetchrow(f'SELECT * FROM muted WHERE guild_id = {member.guild.id}')
+        if guild_data and guild_data['muted_members']:
+            mute_role = member.guild.get_role(guild_data['mute_role'])
+            if mute_role:
+                for _, actual_data in guild_data['muted_members']:
+                    if actual_data == str(member.id):
+                        await member.remove_roles(*member.roles[1:], reason='Previously muted')
+                        await member.add_roles(mute_role, reason='Previously muted')
 
     async def on_guild_join(self, guild):
         for channel in guild.text_channels:
@@ -74,17 +84,17 @@ class Persona(commands.Bot):
             await Context.execute(f"UPDATE blacklist SET name = '{after}' WHERE id = {after.id}")
 
     async def on_guild_update(self, before, after):
-        # update the prefix/moderater tables with the new guild name
-        if await Context.fetch(f'SELECT * FROM mod WHERE guild_id = {before.id}'):
-            await Context.execute(f"UPDATE mod SET guild_name = '{after}' WHERE guild_id = {after.id}")
+        # update the tables with the new guild name
+        if await Context.fetch(f'SELECT * FROM muted WHERE guild_id = {before.id}'):
+            await Context.execute(f"UPDATE muted SET guild_name = '{after}' WHERE guild_id = {after.id}")
             
         if await Context.fetch(f'SELECT * FROM prefix WHERE guild_id = {before.id}'):
             await Context.execute(f"UPDATE prefix SET guild_name = '{after}' WHERE guild_id = {after.id}")
 
     async def on_guild_role_delete(self, role):
-        guild_data = await Context.fetchrow(f'SELECT * FROM mod WHERE guild_id = {role.guild.id}')
+        guild_data = await Context.fetchrow(f'SELECT * FROM muted WHERE guild_id = {role.guild.id}')
         if guild_data and guild_data['mute_role'] == role.id:
-            await Context.execute(f'UPDATE mod SET mute_role = 0 WHERE guild_id = {role.guild.id}')
+            await Context.execute(f'UPDATE muted SET mute_role = 0 WHERE guild_id = {role.guild.id}')
 
             if role.guild.system_channel:
                 # let them know the mute role is gone and use @name as there is no way to check for a server prefix
@@ -95,7 +105,7 @@ class Persona(commands.Bot):
         await Context.execute('CREATE TABLE IF NOT EXISTS compendium(name text, id bigint, personas text [], level bigint, money bigint)')
         await Context.execute('CREATE TABLE IF NOT EXISTS blacklist(name text, id bigint, reason text)')
         await Context.execute('CREATE TABLE IF NOT EXISTS prefix(guild_name text, guild_id bigint, prefixes text [], no_default bool)')
-        await Context.execute('CREATE TABLE IF NOT EXISTS mod(guild_name text, guild_id bigint, mute_role bigint)')
+        await Context.execute('CREATE TABLE IF NOT EXISTS muted(guild_name text, guild_id bigint, mute_role bigint, muted_members text [][])')
 
     def run(self):
         for cog in os.listdir('./cogs'):
