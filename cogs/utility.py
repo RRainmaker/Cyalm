@@ -147,6 +147,10 @@ class HelpPages:
             await self.effect()
 
 class HelpCommand(commands.HelpCommand):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.alphabetize = lambda cmd: cmd.qualified_name
+    
     async def send_bot_help(self):
         key = lambda c: c.cog_name or 'Miscellaneous'
         command_list = []
@@ -154,7 +158,7 @@ class HelpCommand(commands.HelpCommand):
 
         for cog, commands in itertools.groupby(await self.filter_commands(self.context.bot.commands, sort=True, key=key), key):
             # alphabetizes the commands
-            commands = sorted(sorted(commands, key=key), key=lambda c: c.qualified_name)
+            commands = sorted(sorted(commands, key=key), key=self.alphabetize)
             
             if len(commands) == 0: 
                 continue
@@ -166,7 +170,7 @@ class HelpCommand(commands.HelpCommand):
         await pages.start()
 
     async def send_cog_help(self, cog):
-        entries = await self.filter_commands(cog.get_commands(), sort=True)
+        entries = await self.filter_commands(cog.get_commands(), sort=True, key=self.alphabetize)
         
         # gatekeeping
         if len(entries) == 0:
@@ -178,7 +182,7 @@ class HelpCommand(commands.HelpCommand):
         await pages.start()
 
     async def send_group_help(self, group):
-        commands = await self.filter_commands(group.commands, sort=True)
+        commands = await self.filter_commands(group.commands, sort=True, key=self.alphabetize)
         
         if len(commands) == 0:
             return await self.send_command_help(group)
@@ -193,7 +197,7 @@ class HelpCommand(commands.HelpCommand):
         if group.description:
             desc += f'{group.description}\n'
         if group.help:
-            desc += f'{group.help}'    
+            desc += f'{group.help}'
         
         if desc:
             pages.description = desc
@@ -209,7 +213,7 @@ class HelpCommand(commands.HelpCommand):
         if command.description:
             desc += f'{command.description}\n'
         if command.help:
-            desc += f'{command.help}\n'
+            desc += f'{command.help}'
         
         if desc:
             embed.add_field(name='Description', value=desc)
@@ -252,10 +256,46 @@ class HelpCommand(commands.HelpCommand):
 
 class Utility(commands.Cog):
     'General commands for everyday Discord'
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         bot.help_command = HelpCommand()
         bot.help_command.cog = self
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        # for my suggesstions channel
+        if message.channel.id == 765409273433686057:
+            await message.add_reaction('✅')
+            await message.add_reaction('❌')
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.channel_id == 765421743573434428:
+            guild = self.bot.get_guild(payload.guild_id)
+            member = guild.get_member(payload.user_id)
+            emoji_correlation = {'<:CK_RedGem:765424509770924033>': guild.get_role(765421836208439316), 
+                                 '<:CK_OrangeGem:765424586119577610>': guild.get_role(765421981524688896),
+                                 '<:CK_YellowGem:765424631992680479>': guild.get_role(765422057231089674),
+                                 '<:CK_GreenGem:765425324296765471>': guild.get_role(765422145224048650),
+                                 '<:CK_BlueGem:765425378008891424>': guild.get_role(765422184452587530),
+                                 '<:CK_PurpleGem:765424416552124508>': guild.get_role(765422225175216139),
+                                 '👍': guild.get_role(690738886565036084)}
+            if str(payload.emoji) in emoji_correlation.keys():
+                await member.add_roles(emoji_correlation[str(payload.emoji)])
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        if payload.channel_id == 765421743573434428:
+            guild = self.bot.get_guild(payload.guild_id)
+            member = guild.get_member(payload.user_id)
+            emoji_correlation = {'<:CK_RedGem:765424509770924033>': guild.get_role(765421836208439316), 
+                                 '<:CK_OrangeGem:765424586119577610>': guild.get_role(765421981524688896),
+                                 '<:CK_YellowGem:765424631992680479>': guild.get_role(765422057231089674),
+                                 '<:CK_GreenGem:765425324296765471>': guild.get_role(765422145224048650),
+                                 '<:CK_BlueGem:765425378008891424>': guild.get_role(765422184452587530),
+                                 '<:CK_PurpleGem:765424416552124508>': guild.get_role(765422225175216139)}
+            if str(payload.emoji) in emoji_correlation.keys():
+                await member.remove_roles(emoji_correlation[str(payload.emoji)])
 
     @commands.command(description="Check the bot's ping")
     async def ping(self, ctx):
@@ -264,10 +304,6 @@ class Utility(commands.Cog):
     @commands.command(description='Invite the bot to your server')
     async def invite(self, ctx):
         await ctx.send(f'<https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&permissions=271665216&scope=bot>')
-    
-    @commands.group(invoke_without_command=True, description='Show the prefix the bot uses on the current server', aliases=['prefixes'])
-    async def prefix(self, ctx):
-        await ctx.send(embed=discord.Embed(title='Current Prefixes', description='**' + '\n'.join(await self.bot.get_prefix(ctx.message)) + '**', color=ctx.pcolors))
 
     @commands.command(description='How long the bot has been up for')
     async def uptime(self, ctx):
@@ -295,10 +331,13 @@ class Utility(commands.Cog):
         
         await ctx.send(f'{lines} lines across {filecount} files')
 
+    @commands.group(invoke_without_command=True, description='Show the prefix the bot uses on the current server', aliases=['prefixes'])
+    async def prefix(self, ctx):
+        await ctx.send(embed=discord.Embed(title='Current Prefixes', description='**' + '\n'.join(sorted(await self.bot.get_prefix(ctx.message))) + '**', color=ctx.pcolors))
+
     @prefix.command(description='Change the prefix of the bot for the server')
-    @commands.guild_only()
+    @commands.has_guild_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild) # make sure other people arent also trying to change the prefix
-    @commands.has_permissions(manage_guild=True)
     async def add(self, ctx, *prefixes):
         '''Use the command like so: 
         `p!prefix add prefix1 prefix2`
@@ -332,8 +371,7 @@ class Utility(commands.Cog):
         await ctx.send('The new server prefixes are: \n' + '\n'.join(prefixes))
     
     @prefix.command(description='Remove a prefix from the list')
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild=True)
+    @commands.has_guild_permissions(manage_guild=True)
     @commands.max_concurrency(1, commands.BucketType.guild) 
     async def remove(self, ctx, *prefixes):
         '''Similarly to prefix add, use the command like so:
@@ -350,7 +388,10 @@ class Utility(commands.Cog):
         for prefix in prefixes:
             if prefix not in guild_prefix['prefixes']:
                 return await ctx.send(f'{prefix} is not a prefix your server has')
-
+        
+        if self.bot.mention in prefixes:
+            return await ctx.send('You cannot remove a mention prefix')
+        
         new_prefixes = [prefix for prefix in guild_prefix['prefixes'] if prefix not in prefixes and prefix != self.bot.mention]
         
         await ctx.execute(f"UPDATE prefix SET prefixes = ARRAY{new_prefixes}::text[] WHERE guild_id = {ctx.guild.id}")
