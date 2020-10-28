@@ -1,26 +1,6 @@
 import discord
 from discord.ext import commands, flags
 
-def mod_perms(**extra_bot_perms):
-    def predicate(ctx):
-        author_perms = ctx.author.guild_permissions
-        bot_perms = ctx.me.guild_permissions
-        name = ctx.command.qualified_name
-
-        if 'kick' in name:
-            return author_perms.kick_members and bot_perms.kick_members
-        if 'ban' in name:
-            return author_perms.ban_members and bot_perms.ban_members
-        
-        if extra_bot_perms:
-            for permission, value in extra_bot_perms.items():
-                if getattr(bot_perms, permission) != value:
-                    raise commands.BotMissingPermissions([permission])
-        
-        return author_perms.manage_guild
-
-    return commands.check(predicate)
-
 class Moderation(commands.Cog):
     'Commands made by mods, for mods'
     def __init__(self, bot):
@@ -32,13 +12,15 @@ class Moderation(commands.Cog):
         return True
 
     @commands.command(description='Kick someone out the server (they can still rejoin however)')
-    @mod_perms()
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
         await ctx.guild.kick(member, reason=reason)
         await ctx.send(f'Kicked {member} out the server. Reason: {reason}')
 
     @commands.command(description='Kick multiple members out the server')
-    @mod_perms()
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
     async def masskick(self, ctx, members: commands.Greedy[discord.Member], *, reason=None):
         'Use like so: p!ban @member @member2 @member3 reason for kick'
         if not members:
@@ -50,7 +32,8 @@ class Moderation(commands.Cog):
         await ctx.send(f'Kicked {len(members)} member(s). Reason: {reason}')
 
     @commands.command(cls=flags.FlagCommand, description='Ban someone from the server with an optional delete days number and an optional reason')
-    @mod_perms()
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     @flags.add_flag('-days', type=int, default=1)
     @flags.add_flag('-reason', type=str, nargs='+')
     async def ban(self, ctx, member: discord.Member, **options):
@@ -71,7 +54,8 @@ class Moderation(commands.Cog):
         await ctx.send(f'{member} has now been banned. Reason: {reason}')
 
     @commands.command(cls=flags.FlagCommand, description='Ban multiple members, useful for raiders. Optional delete days number and reason')
-    @mod_perms()
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     @flags.add_flag('-days', type=int, default=1)
     @flags.add_flag('-reason', type=str, nargs='+')
     async def massban(self, ctx, members: commands.Greedy[discord.Member], **options):
@@ -92,7 +76,8 @@ class Moderation(commands.Cog):
         await ctx.send(f'Banned {len(members)} member(s). Reason: {reason}')
 
     @commands.command(description='Unban someone from the server by an ID or name#discrim')
-    @mod_perms()
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
     async def unban(self, ctx, member, *, reason=None):
         if member.isdigit():
             try:
@@ -108,14 +93,14 @@ class Moderation(commands.Cog):
         await ctx.send(f'Unbanned {member.user}. Reason: {reason}')
 
     @commands.group(invoke_without_command=True, description='Shows the server mute role')
-    @mod_perms()
+    @commands.has_permissions(manage_guild=True)
     async def muterole(self, ctx):
-        mute_role = await ctx.fetchrow(f'SELECT * FROM muted WHERE guild_id = {ctx.guild.id}')
+        guild_data = await ctx.fetchrow(f'SELECT * FROM muted WHERE guild_id = {ctx.guild.id}')
         
-        if not mute_role:
+        if not guild_data:
             return await ctx.send('Your server has not set a mute role, so I will to default to the first role named Muted')
         
-        mute_role = ctx.guild.get_role(mute_role['mute_role'])
+        mute_role = ctx.guild.get_role(guild_data['mute_role'])
         
         if not mute_role:
             return await ctx.send(f'The mute role has not been found, please update this with {ctx.prefix}muterole set <role>')
@@ -123,19 +108,20 @@ class Moderation(commands.Cog):
         await ctx.send(f'The server mute role is: {mute_role}')
     
     @muterole.command(name='set', description='Set a custom mute role')
-    @mod_perms()
+    @commands.has_permissions(manage_guild=True)
     async def muterole_set(self, ctx, *, role: discord.Role):
-        exists = await ctx.fetchrow(f'SELECT * FROM muted WHERE guild_id = {ctx.guild.id}')
+        guild_data = await ctx.fetchrow(f'SELECT * FROM muted WHERE guild_id = {ctx.guild.id}')
         
-        if exists:
+        if guild_data:
             await ctx.execute(f"UPDATE muted SET guild_name = '{ctx.guild.name}', mute_role = {role.id} WHERE guild_id = {ctx.guild.id}")
             return await ctx.send(f'Changed the server mute role to {role}')
         
         await ctx.execute(f"INSERT INTO muted(guild_name, guild_id, mute_role, muted_members) VALUES('{ctx.guild.name}', {ctx.guild.id}, {role.id}, ARRAY[[]])")
-        await ctx.send(f'The new server mute role is now {role}')
+        await ctx.send(f'The server mute role is now {role}')
 
     @commands.command(aliases=['silence'], description='Strip someone of all their roles and mute them')
-    @mod_perms(manage_roles=True)
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def mute(self, ctx, *, member: discord.Member):
         '''The target's highest role must be lower than the bot's highest role
            If there isnt a custom mute role set, the bot will default to the first role called Muted'''       
@@ -150,8 +136,10 @@ class Moderation(commands.Cog):
             if not mute_role:
                 return await ctx.send('Your server has most likely deleted the custom mute role, so I cannot continue')
             
-            if guild_data['muted_members']:
-                await ctx.execute(f"UPDATE muted SET muted_members = array_append(ARRAY{guild_data['muted_members']}, ARRAY['{member}', '{member.id}']) WHERE guild_id = {ctx.guild.id}")
+            muted = guild_data['muted_members']
+            if muted:
+                muted.append([str(member), str(member.id)])
+                await ctx.execute(f"UPDATE muted SET muted_members = ARRAY{muted} WHERE guild_id = {ctx.guild.id}")
             else:
                 await ctx.execute(f"UPDATE muted SET muted_members = ARRAY[['{member.name}', '{member.id}']] WHERE guild_id = {ctx.guild.id}")
 
@@ -166,41 +154,38 @@ class Moderation(commands.Cog):
         await ctx.send(f'Successfully muted {member.mention}')
     
     @commands.command(description="Remove someone's mute role")
-    @mod_perms(manage_roles=True)
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def unmute(self, ctx, *, member: discord.Member):
-        mute_role = await ctx.fetchrow(f'SELECT * FROM muted WHERE guild_id = {ctx.guild.id}')
+        guild_data = await ctx.fetchrow(f'SELECT * FROM muted WHERE guild_id = {ctx.guild.id}')
+        member_mute_role = discord.utils.get(member.roles, name='Muted')
 
-        remaining_muted = []
-
-        if mute_role['muted_members']:
-            for _, actual_data in mute_role['muted_members']:
-                if actual_data == str(member.id):
-                    continue
-                remaining_muted.append(_)
-        
-        await ctx.execute(f'UPDATE muted SET muted_members = ARRAY{remaining_muted}::text[] WHERE guild_id = {ctx.guild.id}')
-
-        if mute_role:
-            mute_role = ctx.guild.get_role(mute_role['mute_role'])
+        if guild_data:
+            if not discord.utils.find(lambda m: m[1] == str(member.id), guild_data['muted_members']) and not member_mute_role:
+                return await ctx.send('That person is not muted')
             
-            # deleting a mute role but still having another role called muted is an extremely rare case
+            remaining_muted = [m for m in guild_data['muted_members'] if m[1] != str(member.id)]
+            await ctx.execute(f'UPDATE muted SET muted_members = ARRAY{remaining_muted}::text[] WHERE guild_id = {ctx.guild.id}')
+            mute_role = ctx.guild.get_role(guild_data['mute_role'])
+             
+        if not guild_data or not mute_role:
+            # deleting a mute role but still having another role called muted is a rare case
             # but in the event, its better to be prepared
-            if not mute_role:
-                if not await ctx.prompt('Your server has deleted the custom mute role. Do you still want to remove any role called Muted?', ctx.author, timeout=60):
-                    return await ctx.send('Cancelling mute role removal')
 
-                roles_to_remove = [role for role in member.roles if role.name == 'Muted']
-                if roles_to_remove:
-                    await member.remove_roles(*roles_to_remove, reason=f'Unmuted by {ctx.author}')
-                    return await ctx.send(f'Successfully unmuted {member.mention}')
-                else:
-                    return await ctx.send('That person does not have any role named Muted')
-
-        if mute_role not in member.roles:
-            return await ctx.send('That person is not muted')
+            if not member_mute_role:
+                return await ctx.send('That person is not muted')
+                
+            if await ctx.prompt('I could not find the set mute role, would you still like me to remove any role named Muted?', ctx.author, timeout=60):
+                await member.remove_roles(member_mute_role, reason=f'Unmuted by {ctx.author}')
+                return await ctx.send(f'Successfully unmuted {member.mention}')
+                
+            else:
+                return await ctx.send('Cancelling mute role removal')
         
-        await member.remove_roles(mute_role, reason=f'Unmuted by {ctx.author}') 
+        if mute_role in member.roles:
+            await member.remove_roles(mute_role, reason=f'Unmuted by {ctx.author}')
+        
         await ctx.send(f'Successfully unmuted {member.mention}')
-
+        
 def setup(bot):
     bot.add_cog(Moderation(bot))
