@@ -3,12 +3,11 @@ from discord.ext import commands
 import config
 import os
 import datetime
-from extras import Context
+from context import Context
 
-class Persona(commands.Bot):
-    'A Discord bot created by Rainmaker dedicated to the video game series Persona'
+class Cyalm(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix=self.prefix, description='A Discord bot based on the video game series Persona', case_insensitive=True, intents=discord.Intents.all())
+        super().__init__(command_prefix=self.prefix, case_insensitive=True, intents=discord.Intents.all())
         self.loop.create_task(self.create_tables())
         self.cooldown = commands.CooldownMapping.from_cooldown(7, 10, commands.BucketType.user)
         self.spam_strikes = {}
@@ -16,7 +15,7 @@ class Persona(commands.Bot):
     async def on_ready(self):
         self.start_time = datetime.datetime.now()
         print(f'{self.user} is online and ready')
-        await self.change_presence(activity=discord.Game('Persona 5 Royal (p!)'))
+        await self.change_presence(activity=discord.Activity(name=f'{len(self.guilds)} servers for c.', type=discord.ActivityType.watching))
 
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=Context)
@@ -47,7 +46,7 @@ class Persona(commands.Bot):
             await self.invoke(ctx)
 
     async def prefix(self, bot, message):
-        initial_prefixes = ['p!', 'persona!', 'P!']
+        initial_prefixes = ['c.', 'c!', 'C.', 'C!']
         
         if message.guild:
             data = await Context.fetchrow(f'SELECT * FROM prefix WHERE guild_id = {message.guild.id}')
@@ -65,18 +64,18 @@ class Persona(commands.Bot):
 
     async def on_member_join(self, member):
         guild_data = await Context.fetchrow(f'SELECT * FROM muted WHERE guild_id = {member.guild.id}')
+        
         if guild_data and guild_data['muted_members']:
             mute_role = member.guild.get_role(guild_data['mute_role'])
-            if mute_role:
-                for _, actual_data in guild_data['muted_members']:
-                    if actual_data == str(member.id):
-                        await member.remove_roles(*member.roles[1:], reason='Previously muted')
-                        await member.add_roles(mute_role, reason='Previously muted')
+            
+            if mute_role and discord.utils.find(lambda m: m[1] == str(member.id), guild_data['muted_members']):
+                await member.remove_roles(*member.roles[1:], reason='Previously muted')
+                await member.add_roles(mute_role, reason='Previously muted')
 
     async def on_guild_join(self, guild):
         for channel in guild.text_channels:
             if channel.permissions_for(guild.me).send_messages:
-                return await channel.send(f'Hello, I am the Persona bot made by {self.get_user(self.owner_id)}. Thank you for having me, I hope we can build a great friendship')
+                return await channel.send(f'Hello, I am Cyalm, and I was made by {self.get_user(self.owner_id)}\nThank you for having me, I hope we can build a great friendship\nMy current prefix is c.')
                 
     async def on_user_update(self, before, after):
         # this is to update the blacklist in case they change their name/discrim
@@ -106,6 +105,7 @@ class Persona(commands.Bot):
         await Context.execute('CREATE TABLE IF NOT EXISTS blacklist(name text, id bigint, reason text)')
         await Context.execute('CREATE TABLE IF NOT EXISTS prefix(guild_name text, guild_id bigint, prefixes text [], no_default bool)')
         await Context.execute('CREATE TABLE IF NOT EXISTS muted(guild_name text, guild_id bigint, mute_role bigint, muted_members text [][])')
+        await Context.execute('CREATE TABLE IF NOT EXISTS quotes(guild_name text, guild_id bigint, quoted_members text [][])')
 
     def run(self):
         for cog in os.listdir('./cogs'):
@@ -125,4 +125,4 @@ class Persona(commands.Bot):
     def mention(self):
         return f'<@!{self.user.id}>'
 
-Persona().run()
+Cyalm().run()
