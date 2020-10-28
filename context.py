@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands, menus
 import asyncpg
 import config
@@ -32,13 +31,12 @@ class Context(commands.Context):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    async def prompt(self, content, recipient: discord.Member, timeout: int):
+    async def prompt(self, content, recipient, timeout):
         return await Confirmation(content, recipient, timeout).begin(self)
-    
+
     @property
-    def pcolors(self):
-        'A property to randomly return blue, yellow and red, the theme colors of Persona 3/4/5'
-        return random.choice([0xff0000, 0x0000ff, 0xffff00])
+    def cyan(self):
+        return 0x00eeff
 
     # SQL functions
 
